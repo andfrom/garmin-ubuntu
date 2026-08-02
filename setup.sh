@@ -29,7 +29,11 @@ if command -v xhost >/dev/null 2>&1; then
 fi
 
 echo "==> Building images"
-docker compose build
+# --profile is required here even though sdk-manager isn't started by default:
+# `profiles:` gates `docker compose build` too, not just `up` - omitting this flag
+# silently skips building sdk-manager entirely (found the hard way: a stale image
+# was reused indefinitely without error, mid-project).
+docker compose --profile sdk-manager build
 
 echo
 echo "Setup complete. Start the IDE with:"
