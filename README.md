@@ -201,6 +201,48 @@ If they don't, fix `.env` and rebuild - the theia image remaps its `theia` user'
 UID/GID at *build* time (`usermod`), so a stale image built with the wrong values won't
 self-correct just by changing `.env` and restarting the container.
 
+### "Unable to determine the current SDK" / "MonkeyC Language Server ... crashed 5 times"
+
+The extension's bundled `LanguageServer.jar` (and the debugger it powers) can't find the
+SDK, even though `current-sdk.cfg` under `$CONNECTIQ_DATA_DIR` looks correct. Two
+possible causes, both hit here:
+
+1. **A stale absolute path.** `current-sdk.cfg` and `sdkmanager-config.ini`'s
+   `current-sdk=` line both store an *absolute* path back to the SDK directory - if
+   either was written by a different environment (a native install, or a container with
+   a different `$HOME`), it'll point somewhere the current container can't see. Check
+   both:
+   ```
+   cat "$CONNECTIQ_DATA_DIR/current-sdk.cfg"
+   grep ^current-sdk= "$CONNECTIQ_DATA_DIR/sdkmanager-config.ini"
+   ```
+   Both should point at `/home/theia/.Garmin/ConnectIQ/Sdks/<version>/` (that's the
+   *container-internal* path, not a host path) with the version directory actually
+   present. Fix by hand-editing them, or by opening `sdk-manager` and re-selecting the
+   current SDK there.
+2. **A `getpwuid()` uid collision.** The theia image's base ships a pre-existing `node`
+   user already sitting at uid 1000; remapping `theia` to the host's uid (also usually
+   1000) makes both accounts resolve via `getpwuid()`, and Java's `user.home` - which
+   `LanguageServer.jar` uses to find `~/.Garmin/ConnectIQ` - follows `getpwuid()`, not
+   the `$HOME` env var. If `node`'s passwd entry doesn't also point at `/home/theia`,
+   the language server keeps resolving to `/home/node` regardless of what `.env` or
+   `ENV HOME` say. Check from inside the image:
+   ```
+   docker run --rm --entrypoint bash garmin-theia:latest -c \
+     "java -XshowSettings:properties -version 2>&1 | grep user.home"
+   ```
+   Should print `/home/theia`. If it doesn't, `theia/Dockerfile`'s `usermod -d
+   /home/theia node` step is missing or not taking effect - rebuild with `--no-cache`.
+
+   Do **not** try to fix this by relocating theia's own home directory to something
+   else - that was tried here and broke the container outright (`Cannot find module
+   '/home/theia/applications/browser/lib/backend/main.js'`), because the base image's
+   own launcher hardcodes that absolute path. `/home/theia` is fixed; only `node` needs
+   to be pointed at it.
+
+After fixing either, `docker compose restart theia` and retry - no rebuild needed for
+cause 1, since the config files are bind-mounted and read live.
+
 ### `docker compose build` doesn't seem to change the sdk-manager image at all
 
 Two independent gotchas, both found while building the smoke test:
