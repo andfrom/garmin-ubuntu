@@ -1,0 +1,34 @@
+services:
+  theia:
+    build:
+      context: ./theia
+      args:
+        UID: "${HOST_UID:-1000}"
+        GID: "${HOST_GID:-1000}"
+    image: garmin-theia:latest
+    container_name: garmin-theia
+    ports:
+      - "3000:3000"
+    environment:
+      DISPLAY: "${DISPLAY:-:0}"
+    volumes:
+      - ${CONNECTIQ_DATA_DIR:?run ./setup.sh or copy .env.example to .env first}:/home/theia/.Garmin/ConnectIQ
+      - ${THEIA_CONFIG_DIR:?run ./setup.sh or copy .env.example to .env first}:/home/theia/.theia-ide
+      - ${WORKSPACES_DIR:?run ./setup.sh or copy .env.example to .env first}:/home/theia/workspaces
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    restart: unless-stopped
+
+  sdk-manager:
+    build:
+      context: ./sdk-manager
+      args:
+        UID: "${HOST_UID:-1000}"
+        GID: "${HOST_GID:-1000}"
+    image: garmin-sdk-manager:latest
+    container_name: garmin-sdk-manager
+    profiles: ["sdk-manager"]
+    environment:
+      DISPLAY: "${DISPLAY:-:0}"
+    volumes:
+      - ${CONNECTIQ_DATA_DIR:?run ./setup.sh or copy .env.example to .env first}:/home/garmin/.Garmin/ConnectIQ
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
