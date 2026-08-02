@@ -34,8 +34,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # unresolvable from inside Theia (found the hard way: "Unable to determine the current
 # SDK" when a stale absolute path pointed somewhere neither container could see). So
 # this account's home is deliberately set to match the theia image's home
-# (/home/theia), even though the account itself is named `garmin` - the account name
-# and its home directory are independent, and only the latter needs to match.
+# (/home/theia - theia's own launcher hardcodes that path internally, so it can't be
+# relocated on that side; see theia/Dockerfile), even though this account is named
+# `garmin` - the account name and its home directory are independent, and only the
+# latter needs to match. This also has to be the literal directory, not just the $HOME
+# env var: Java's `user.home` - which the Monkey C extension's language server uses on
+# the Theia side - resolves via getpwuid() rather than $HOME, so both containers'
+# actual account home directories need to agree, not just their environment.
 RUN groupadd -g ${GID} garmin \
     && useradd -m -u ${UID} -g ${GID} -d /home/theia -s /bin/bash garmin
 

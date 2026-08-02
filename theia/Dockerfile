@@ -21,10 +21,27 @@ USER root
 # (workspaces, ConnectIQ SDK data) are owned by the host user - remap `theia` to match
 # instead of fighting permissions at runtime (this bit earlier attempts: SDK-installed
 # files showed up with a blank owner / group `messagebus` due to exactly this mismatch).
+# theia's home dir itself (/home/theia) is NOT relocated - the base image's own launcher
+# hardcodes /home/theia/applications/.../main.js as an absolute path, so moving the
+# account's home (even with usermod -m, which relocates the actual files) breaks the
+# container outright (learned by breaking it: "Cannot find module
+# '/home/theia/applications/browser/lib/backend/main.js'").
+#
+# The base image also ships a pre-existing `node` user that happens to already sit at
+# uid/gid 1000 - once `theia` is remapped to the same uid, both accounts resolve from
+# that uid via getpwuid(), and glibc/the JVM pick whichever entry comes first in
+# /etc/passwd (here: `node`, whose home is still the untouched default /home/node).
+# This bit us for real: Java's `user.home` system property - which the Monkey C
+# extension's bundled LanguageServer.jar uses to find ~/.Garmin/ConnectIQ - resolves via
+# getpwuid(), not the $HOME env var, so setting ENV HOME alone was not enough; it kept
+# resolving to /home/node regardless. Fix: repoint `node`'s passwd entry (not its files -
+# nothing under the untouched /home/node matters) at theia's real, immovable home, so
+# both accounts resolve to /home/theia regardless of which one getpwuid() picks.
 ARG UID=1000
 ARG GID=1000
 RUN groupmod -o -g ${GID} theia \
     && usermod -o -u ${UID} -g ${GID} theia \
+    && usermod -d /home/theia node \
     && chown -R theia:theia /home/theia
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
