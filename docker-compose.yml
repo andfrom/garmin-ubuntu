@@ -30,5 +30,7 @@ services:
     environment:
       DISPLAY: "${DISPLAY:-:0}"
     volumes:
-      - ${CONNECTIQ_DATA_DIR:?run ./setup.sh or copy .env.example to .env first}:/home/garmin/.Garmin/ConnectIQ
+      # Mounted at /home/theia (not /home/garmin) deliberately - see the Dockerfile's
+      # comment on why both containers need the same $HOME.
+      - ${CONNECTIQ_DATA_DIR:?run ./setup.sh or copy .env.example to .env first}:/home/theia/.Garmin/ConnectIQ
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
