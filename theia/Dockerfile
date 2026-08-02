@@ -68,6 +68,34 @@ RUN mkdir -p /opt/theia-plugins/monkey-c \
     && rm /tmp/monkey-c.vsix \
     && chown -R theia:theia /opt/theia-plugins
 
+# Patch a genuine Theia/extension incompatibility: the extension waits for
+# `tasks.onDidEndTaskProcess` and checks `e.execution.task.definition.type === "monkeyc"`
+# to know its own build task finished, before it'll hand back a resolved debug
+# configuration (which is what triggers spawning the actual debug adapter). That check
+# is written for VSCode Desktop's behavior, where a custom task type is preserved in
+# `definition.type`. Theia does something different by design (not a bug it intends to
+# fix - see https://github.com/eclipse-theia/theia/issues/8822, closed as-is): it
+# rewrites `definition.type` to the underlying execution type (e.g. "shell") and puts
+# the original custom type in `definition.taskType` instead. The extension's check never
+# matches under Theia, so it hangs forever - "Run"/"Debug" builds successfully (visible
+# in the task terminal) but never proceeds any further, with no error anywhere. Patch
+# every occurrence of the check to accept either field.
+RUN sed -i 's/"monkeyc"===e\.execution\.task\.definition\.type/("monkeyc"===e.execution.task.definition.type||"monkeyc"===e.execution.task.definition.taskType)/g' \
+    /opt/theia-plugins/monkey-c/extension/dist/extension.js
+
+# Two more genuine Theia/extension incompatibilities around starting a debug session at
+# all ("Run App" never completing, no error anywhere) - found via live container
+# patching and browser breakpoint debugging across an extensive investigation. Both are
+# real, independently verified fixes; see README.md's Troubleshooting section for the
+# full writeup. Applied by a helper script since one of them patches multi-line source
+# in the Theia-IDE base image itself (not just the extension), which is awkward to
+# express as a single-line sed.
+COPY patch-debug-task-tracking.js /tmp/patch-debug-task-tracking.js
+RUN node /tmp/patch-debug-task-tracking.js \
+    /opt/theia-plugins/monkey-c/extension/dist/extension.js \
+    /home/theia/applications/browser/lib/frontend/vendors-node_modules_theia_plugin-ext_lib_hosted_browser_hosted-plugin_js.js \
+    && rm /tmp/patch-debug-task-tracking.js
+
 ENV THEIA_DEFAULT_PLUGINS=local-dir:/opt/theia-plugins
 ENV DISPLAY=:0
 
