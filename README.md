@@ -86,8 +86,11 @@ docker compose stop sdk-manager && docker compose rm -f sdk-manager
 Rebuild after Dockerfile changes:
 
 ```
-docker compose build
+docker compose --profile sdk-manager build
 ```
+
+(`--profile sdk-manager` is required here even though that service isn't started by
+default - see [Troubleshooting](#troubleshooting) if you forget it.)
 
 ## Verified end-to-end
 
@@ -116,6 +119,123 @@ any interactive simulator/debug sessions running locally on an amd64 machine; on
 *editing/build* container is a candidate for moving to a remote/ARM64 host (e.g.
 `docker buildx build --platform linux/arm64 -t <registry>/garmin-theia ./theia`, push, run
 remotely, and access it over the network or a mesh VPN at `http://<host>:3000`).
+
+## Troubleshooting
+
+Every entry below is a real failure hit and diagnosed while building this repo, not a
+hypothetical.
+
+### GUI window never appears (SDK Manager, or the simulator launched from Theia)
+
+Cause is almost always the X server refusing the container's connection. Check:
+
+```
+xhost +si:localuser:$(whoami)      # containers won't be authorized to connect without this
+echo $DISPLAY                      # compare against DISPLAY in .env - they must match
+```
+
+If both look right and it's still silent, check the container's own stderr - a GTK app
+that can't reach the display fails immediately and loudly:
+
+```
+docker compose logs sdk-manager
+# or, for a one-off container:
+docker logs <container>
+```
+
+Look for `cannot open display` or `Unable to initialize GTK+, DISPLAY not set`. On a
+Wayland session (GNOME on 24.04 and later), `DISPLAY` should point at the XWayland
+display (commonly `:0` or `:1` - run `ls /tmp/.X11-unix/` on the host to see what's
+actually there).
+
+### `error while loading shared libraries: libXxx.so.N: cannot open shared object file`
+
+A missing runtime library - the same class of bug that broke this project for months
+before (`libwebkit2gtk-4.0.so.37`, `libsoup-2.4.so.1`, `libSM.so.6`,
+`libusb-1.0.so.0` have all been hit here). `apt-get install` exiting 0 does **not** mean
+the binary can actually run - it only means the packages you listed were installable, not
+that you listed the right ones. Diagnose directly against the binary itself:
+
+```
+docker run --rm --entrypoint bash garmin-sdk-manager:latest -c \
+  "ldd /opt/sdk-manager/bin/sdkmanager | grep -i 'not found'"
+```
+
+Same idea for the SDK's `simulator` binary (not baked into the theia image - it comes
+from the bind-mounted SDK data dir at runtime), substituting the real path:
+
+```
+docker run --rm --entrypoint bash -v "$CONNECTIQ_DATA_DIR:/sdk:ro" garmin-theia:latest -c \
+  "ldd /sdk/Sdks/*/bin/simulator | grep -i 'not found'"
+```
+
+Whatever's listed as `not found`, add the corresponding Debian package to the relevant
+Dockerfile and rebuild with `--no-cache` (see below - a plain rebuild can mask this).
+`test/smoke-test.sh` runs both of these checks automatically.
+
+### `Unable to connect to simulator` from `monkeydo`
+
+The simulator is a separate long-running process, not something `monkeydo` starts for
+you - per its own `--help` text: "The simulator must be running for this command to
+succeed." Start it first, then push the app:
+
+```
+"$SDK/bin/simulator" &   # leave running
+monkeydo bin/YourApp.prg fr265
+```
+
+This is also what the Monkey C extension's "Run"/"Debug" command does under the hood, so
+if debugging from the Theia UI silently does nothing, check whether a `simulator` process
+is actually running inside the container.
+
+### Bind-mounted files owned by the wrong user / permission denied on write
+
+UID/GID mismatch between the container's user and the host user that owns the
+bind-mounted directories. Check `HOST_UID`/`HOST_GID` in `.env` match your actual user:
+
+```
+id -u; id -g
+```
+
+If they don't, fix `.env` and rebuild - the theia image remaps its `theia` user's
+UID/GID at *build* time (`usermod`), so a stale image built with the wrong values won't
+self-correct just by changing `.env` and restarting the container.
+
+### `docker compose build` doesn't seem to change the sdk-manager image at all
+
+Two independent gotchas, both found while building the smoke test:
+
+1. **`profiles:` gates `build`, not just `up`.** A profile-gated service (`sdk-manager`
+   here) is silently skipped by a plain `docker compose build`, with no warning - it just
+   keeps whatever image already has that tag. Always pass `--profile sdk-manager`
+   explicitly when building it: `docker compose --profile sdk-manager build`.
+2. **Cached layers can mask a fix (or a regression).** A cached `RUN apt-get install ...`
+   layer was observed to be reused even after editing the package list, silently keeping
+   an old, broken result. If a rebuild doesn't seem to have taken effect, confirm with
+   `--no-cache`:
+   ```
+   docker compose --profile sdk-manager build --no-cache
+   ```
+
+`test/smoke-test.sh` always builds with both of these accounted for, precisely because
+they produced false "it's fine" results here.
+
+### Port 3000 already in use
+
+Something else on the host (or another container) is bound to it - a Grafana snap
+instance did exactly this during earlier development. Find and stop it, or change the
+host-side port in `docker-compose.yml`'s `ports:` mapping (`"3001:3000"`, etc.) and open
+that port instead.
+
+### Newly installed SDK/device doesn't show up in Theia
+
+The Monkey C extension reads the SDK config (`current-sdk.cfg`, `Devices/`) when it
+activates, not continuously. After installing or updating something via `sdk-manager`,
+restart the `theia` container so it picks up the change:
+
+```
+docker compose restart theia
+```
 
 ## Files
 
