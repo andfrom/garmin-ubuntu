@@ -279,6 +279,127 @@ restart the `theia` container so it picks up the change:
 docker compose restart theia
 ```
 
+### "Run App" / Start Debugging hangs forever, no error anywhere
+
+This is the two genuine Theia/extension bugs `patch-debug-task-tracking.js` already
+works around (see the Dockerfile comment above it), plus a third, deeper one found
+during a later investigation that is **not yet worked around** - the debug session can
+still hang even with both existing fixes applied. Documenting the full chain here since
+each stage runs in a different process, which made this hard to pin down: three
+independent execution contexts are involved, only one of which (the frontend) is
+reachable via ordinary browser DevTools.
+
+**Execution contexts involved** (which OS process each stage runs in):
+
+- **Frontend** - plain JS in the browser tab. Reachable via Firefox/Chrome DevTools'
+  normal Sources/Console panels.
+- **Backend** - Theia's main Node.js process (`lib/backend/main.js`), which spawns the
+  plugin-host. Not directly reachable via a browser debugger; observable via
+  `docker logs`.
+- **Plugin-host** - a *separate* Node.js child process (`lib/backend/plugin-host`, shown
+  in logs as `PLUGIN_HOST(pid)`) that actually runs the Monkey C extension's own code
+  (`extension.js`). Also not reachable via a browser debugger - its `console.log` output
+  goes to `docker logs` (its stdout is piped through the backend process), and attaching
+  a real debugger to it requires Node's inspector protocol (`kill -USR1 <pid>`), which
+  Firefox cannot speak (its `about:debugging` remote-debugging feature only talks to
+  other Firefox instances, not Node's V8 Inspector protocol - no combination of
+  host/port there will work). Chrome/Chromium's `chrome://inspect` can, if available.
+
+**Functional blocks involved** (which subsystem owns each stage, independent of which
+process it happens to run in):
+
+- **Debug Configuration Provider** - the extension's `Pn` class plus Theia's own
+  `PluginDebugService`/`resolveDebugConfigurationByResolversChain`. Job: turn a
+  `launch.json` entry into a fully-resolved config, including making sure a build has
+  run first.
+- **Tasks API bridge** - the VS Code Tasks API surface (`vscode.tasks.executeTask`,
+  `vscode.tasks.onDidEndTaskProcess`) as exposed to extensions. Implemented by a
+  `TasksExtImpl`-style class in the plugin-host, backed by a matching bridge class in
+  the frontend that forwards real task events across the RPC boundary.
+- **Task Server** - Theia's own core task-lifecycle engine (`@theia/task`, backend). Job:
+  actually spawn the task's process and broadcast its lifecycle (created/exited) to every
+  connected frontend.
+- **Terminal widget** - a UI-only component that separately detects when a task's
+  underlying process exits, purely to update what's shown in the terminal panel
+  ("BUILD SUCCESSFUL", "Terminal will be reused by tasks"). Not wired to the Tasks API
+  bridge at all - this is exactly why the terminal can show success while the extension
+  never finds out.
+- **Debug Adapter launch** - the step that never gets reached: actually starting the
+  debug session once configuration resolution returns.
+
+**The chain, and where it breaks** (`[Process / Functional block]` per stage):
+
+```
+[Frontend / Debug Configuration Provider]
+User clicks "Run App" (static launch.json entry, type: monkeyc)
+        │
+        ▼
+[Frontend / Debug Configuration Provider] Theia calls resolveDebugConfiguration
+        │  → RPC to [Plugin-host / Debug Configuration Provider] extension's Pn.resolveDebugConfiguration
+        │  → fills in defaults (type/name/request), returns almost instantly
+        ▼
+[Frontend / Debug Configuration Provider] Theia calls resolveDebugConfigurationWithSubstitutedVariables
+        │  → RPC to [Plugin-host / Debug Configuration Provider] extension's Pn.resolveDebugConfigurationWithSubstitutedVariables
+        ▼
+[Plugin-host / Tasks API bridge] Extension calls vscode.tasks.executeTask() to start the Monkey C build
+        │  → Promise resolves almost immediately (VS Code API contract: this means
+        │    "task started", NOT "task finished" - confirmed via trace, not a bug)
+        ▼
+[Plugin-host / Tasks API bridge] Extension registers a ONE-TIME onDidEndTaskProcess
+listener and returns a Promise that only resolves when THAT listener fires
+        │
+        ▼
+[Backend / Task Server] Build genuinely runs (monkeybrains.jar) and succeeds
+        │  ✔ confirmed independently: [Frontend / Terminal widget] shows
+        │    "BUILD SUCCESSFUL" / "Terminal will be reused by tasks" - a separate
+        │    detection mechanism, NOT wired to the Tasks API bridge below
+        ▼
+  ┌────────────────────────────────────────────────────────────────────┐
+  │ SHOULD happen:                                                     │
+  │ [Backend / Task Server] detects the process exited                 │
+  │   → broadcasts a task-exit event to [Frontend / Tasks API bridge]  │
+  │   → forwards it to [Plugin-host / Tasks API bridge] over RPC       │
+  │   → [Plugin-host / Tasks API bridge] onDidEndTaskProcess fires     │
+  │   → [Plugin-host / Debug Configuration Provider] Promise resolves  │
+  │   → resolveDebugConfigurationWithSubstitutedVariables returns      │
+  │   → [Frontend / Debug Adapter launch] Theia launches the adapter   │
+  │                                                                     │
+  │ ACTUALLY happens: none of it. Confirmed via live console.log       │
+  │ tracing added independently on both ends:                          │
+  │   • [Frontend / Tasks API bridge] onTaskExit - never fires         │
+  │   • [Plugin-host / Tasks API bridge] onDidEndTaskProcess - never   │
+  │     fires                                                          │
+  │ → extension's Promise never resolves → hangs forever, no error     │
+  └────────────────────────────────────────────────────────────────────┘
+```
+
+So the actual gap is in the **Task Server** functional block (Backend process):
+it never broadcasts a task-exit notification for this task to any frontend listener,
+despite the **Terminal widget** independently proving the process really did exit -
+those two are simply not wired together. This is upstream of both of
+the fixes already applied in `patch-debug-task-tracking.js` - Fix 2 (synthesizing
+`$onDidEndTaskProcess` from the frontend's `onTaskExit`) is correctly targeted at
+exactly this class of problem, but can't help here because `onTaskExit` itself never
+fires - the notification is missing even further back, in the Backend's TaskServer
+itself. Not yet fixed; needs looking at `@theia/task`'s Node-side implementation.
+
+**Dead ends ruled out along the way** (kept here so they don't get re-chased):
+
+- The duplicate `registerDebugConfigurationProvider` call in Fix 1 is **not** the cause
+  of this hang - reverting it to a single registration didn't change the outcome. Its
+  own necessity is unverified rather than confirmed either way.
+- A breakpoint on the shared `resolveDebugConfigurationByResolversChain` helper hitting
+  twice is expected, normal behavior (it's called once from `resolveDebugConfiguration`
+  and again from `resolveDebugConfigurationWithSubstitutedVariables`) - not evidence of
+  a duplicate-registration bug.
+- Firefox DevTools' Sources panel can display stale text for a file that is, in fact,
+  being served and executed correctly (verified independently via `curl` and via other
+  code in the same file behaving correctly at a breakpoint). Cause unconfirmed; a
+  display-only quirk, not a functional problem - don't trust it as proof of what's
+  actually running. `console.log`-based tracing checked via `docker logs` sidesteps this
+  entirely and is more reliable for the plugin-host, which isn't browser-debuggable
+  anyway.
+
 ## Files
 
 | File | Purpose |
