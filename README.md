@@ -120,6 +120,24 @@ any interactive simulator/debug sessions running locally on an amd64 machine; on
 `docker buildx build --platform linux/arm64 -t <registry>/garmin-theia ./theia`, push, run
 remotely, and access it over the network or a mesh VPN at `http://<host>:3000`).
 
+## Patches applied, and what's needed to drop them
+
+This is not a vanilla `theia-ide` image - `theia/Dockerfile` patches a few things to
+work around real Theia/extension incompatibilities. None of them exist by choice; each
+is a workaround for a specific, identified gap. This table is the single place to check
+whether a patch can be dropped yet.
+
+| Patch | Where | Why it exists | Upstream status |
+|---|---|---|---|
+| `taskType` compatibility (`sed`) | `extension.js` | Theia rewrites a task's `definition.type` to the underlying execution type and moves the extension's own custom type to `definition.taskType` instead; the extension's build-completion check only ever looks at `.type`. | **Permanent** - confirmed intentional Theia behavior, not a bug: [eclipse-theia/theia#8822](https://github.com/eclipse-theia/theia/issues/8822), closed as-is. Nothing to wait for. |
+| Fix 1: double `registerDebugConfigurationProvider` registration | `extension.js` (`patch-debug-task-tracking.js`) | Extension registers its `monkeyc` debug config provider with `DebugConfigurationProviderTriggerKind.Dynamic` only; a second, default-trigger-kind registration was added to make Theia actually invoke it for a static `launch.json` entry. | Not filed anywhere - its own necessity is unverified (see Troubleshooting below). Not currently blocked on anything upstream. |
+| Fix 2: synthesize `$onDidEndTaskProcess` | `hosted-plugin.js` (`patch-debug-task-tracking.js`) | Theia's `TaskServerImpl.fireTaskExitedEvent` only ever fires `onDidEndTaskProcess` for tasks `instanceof ProcessTask`, never for `CustomTask` (what the Monkey C build task actually is) - unlike real VS Code Desktop, where this fires correctly. | Draft ready at `scratch/bugreport-theia-customtask-onDidEndTaskProcess.md` (gitignored, not yet filed). **If fixed upstream, this patch can be dropped entirely.** |
+| `.gz` regeneration after patching `hosted-plugin.js` | Dockerfile step | The base image ships every browser-served file with a pre-built `.gz` twin that its static server prefers over the plain file for any client advertising gzip support (every real browser) - so patching the plain file alone has zero effect on real users. | Draft ready at `scratch/bugreport-theia-ide-stale-gz-assets.md` (gitignored, not yet filed). Only needed as long as any frontend file under `lib/frontend/` is patched - **if Fix 2 above is ever dropped, this step becomes unnecessary too**, since it's the only frontend file this repo currently patches. |
+
+The two draft bug reports aren't filed yet - they exist so filing them (or not) is a
+deliberate choice, not something to lose track of. If either gets filed, link the actual
+issue number in this table and in the corresponding Dockerfile comment.
+
 ## Troubleshooting
 
 Every entry below is a real failure hit and diagnosed while building this repo, not a
