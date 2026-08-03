@@ -281,13 +281,12 @@ docker compose restart theia
 
 ### "Run App" / Start Debugging hangs forever, no error anywhere
 
-This is the two genuine Theia/extension bugs `patch-debug-task-tracking.js` already
-works around (see the Dockerfile comment above it), plus a third, deeper one found
-during a later investigation that is **not yet worked around** - the debug session can
-still hang even with both existing fixes applied. Documenting the full chain here since
-each stage runs in a different process, which made this hard to pin down: three
-independent execution contexts are involved, only one of which (the frontend) is
-reachable via ordinary browser DevTools.
+Fixed - `patch-debug-task-tracking.js` applies two fixes for this (see the Dockerfile
+comment above it), and the Dockerfile also regenerates `hosted-plugin.js.gz` right after
+(see the next section below - that part turned out to be essential, not optional).
+Documenting the full investigation here since each stage runs in a different process,
+which made this hard to pin down: three independent execution contexts are involved,
+only one of which (the frontend) is reachable via ordinary browser DevTools.
 
 **Execution contexts involved** (which OS process each stage runs in):
 
@@ -364,41 +363,76 @@ listener and returns a Promise that only resolves when THAT listener fires
   │   → resolveDebugConfigurationWithSubstitutedVariables returns      │
   │   → [Frontend / Debug Adapter launch] Theia launches the adapter   │
   │                                                                     │
-  │ ACTUALLY happens: none of it. Confirmed via live console.log       │
-  │ tracing added independently on both ends:                          │
-  │   • [Frontend / Tasks API bridge] onTaskExit - never fires         │
-  │   • [Plugin-host / Tasks API bridge] onDidEndTaskProcess - never   │
-  │     fires                                                          │
-  │ → extension's Promise never resolves → hangs forever, no error     │
+  │ ACTUALLY happens without Fix 2: none of it. The build task is a    │
+  │ VS Code CustomExecution task (the extension spawns and manages its │
+  │ own process via a Pseudoterminal, rather than using Theia's        │
+  │ ShellExecution/ProcessExecution types). Theia's own                │
+  │ TaskServerImpl.fireTaskExitedEvent only ever fires                 │
+  │ onDidEndTaskProcess for tasks that are `instanceof ProcessTask` -  │
+  │ never for CustomTask, unlike real VS Code Desktop. So              │
+  │ onDidEndTaskProcess genuinely never fires for this task, by        │
+  │ design, on Theia's end - confirmed via live tracing on both the    │
+  │ frontend and the plugin-host independently. → extension's Promise  │
+  │ never resolves → hangs forever, no error.                          │
   └────────────────────────────────────────────────────────────────────┘
 ```
 
-So the actual gap is in the **Task Server** functional block (Backend process):
-it never broadcasts a task-exit notification for this task to any frontend listener,
-despite the **Terminal widget** independently proving the process really did exit -
-those two are simply not wired together. This is upstream of both of
-the fixes already applied in `patch-debug-task-tracking.js` - Fix 2 (synthesizing
-`$onDidEndTaskProcess` from the frontend's `onTaskExit`) is correctly targeted at
-exactly this class of problem, but can't help here because `onTaskExit` itself never
-fires - the notification is missing even further back, in the Backend's TaskServer
-itself. Not yet fixed; needs looking at `@theia/task`'s Node-side implementation.
+Fix 2 in `patch-debug-task-tracking.js` synthesizes the missing `$onDidEndTaskProcess`
+from `onTaskExit`, which *does* fire reliably for every task type and already carries
+the exit code. **Ordering matters**: it must fire `$onDidEndTaskProcess` *before*
+`$onDidEndTask` - the latter deletes the task's execution record from the plugin-host's
+internal map as part of its own cleanup (`TasksExtImpl.$onDidEndTask`), so calling them
+in the wrong order makes `$onDidEndTaskProcess` throw `Error: Task execution with id N
+is not found` (a bug in an earlier version of this patch, not in Theia).
 
 **Dead ends ruled out along the way** (kept here so they don't get re-chased):
 
 - The duplicate `registerDebugConfigurationProvider` call in Fix 1 is **not** the cause
   of this hang - reverting it to a single registration didn't change the outcome. Its
-  own necessity is unverified rather than confirmed either way.
+  own necessity remains unverified rather than confirmed either way.
 - A breakpoint on the shared `resolveDebugConfigurationByResolversChain` helper hitting
   twice is expected, normal behavior (it's called once from `resolveDebugConfiguration`
   and again from `resolveDebugConfigurationWithSubstitutedVariables`) - not evidence of
   a duplicate-registration bug.
-- Firefox DevTools' Sources panel can display stale text for a file that is, in fact,
-  being served and executed correctly (verified independently via `curl` and via other
-  code in the same file behaving correctly at a breakpoint). Cause unconfirmed; a
-  display-only quirk, not a functional problem - don't trust it as proof of what's
-  actually running. `console.log`-based tracing checked via `docker logs` sidesteps this
-  entirely and is more reliable for the plugin-host, which isn't browser-debuggable
-  anyway.
+- Firefox DevTools' Sources panel appearing to show stale code, `console.log` calls
+  embedded in frontend files never firing, and even a blocking `alert()` never
+  triggering, all turned out to be the **same single cause**: see the next
+  troubleshooting entry below. It looked like a browser-execution mystery for hours; it
+  was actually the server silently sending stale pre-compressed bytes the whole time.
+
+### Editing a frontend `.js` file has no effect in the browser, no matter what you try
+
+If you patch a file under `theia/` that ends up served to the browser (anything in
+`lib/frontend/`, not `extension.js` - see below) and the change never seems to take
+effect - not after a hard reload, not after fully quitting and relaunching the browser,
+not even in a completely different browser - check for a stale `.gz` sibling file
+first, before doubting anything else.
+
+The official `theia-ide` base image ships every frontend file with a **pre-built `.gz`
+counterpart** (`bundle.js` + `bundle.js.gz`, `hosted-plugin.js` +
+`hosted-plugin.js.gz`, etc). Its Express static server unconditionally serves the `.gz`
+version to any client whose `Accept-Encoding` header includes `gzip` - which is every
+real browser, always. Editing the plain `.js` file does nothing for real users unless
+the `.gz` sibling is regenerated to match:
+
+```
+gzip -kf path/to/the/file.js
+```
+
+`curl` without an explicit `Accept-Encoding: gzip` header doesn't request the
+compressed variant, so it always sees the correctly-patched plain file - which is
+exactly what makes this so misleading. Every verification method that relies on `curl`
+(including this repo's own `test/smoke-test.sh` HTTP checks) will report success while
+every actual browser keeps silently running the original, unpatched code. Confirmed
+directly: `curl -H "Accept-Encoding: gzip" <url> | gunzip` returns different content
+than a plain `curl <url>` for a patched-but-not-regenerated file.
+
+This is also why `extension.js` doesn't need this treatment: it's loaded by the
+plugin-host process via Node's own `require()`, never served over HTTP at all, so there
+is no `.gz` sibling to worry about for it - only files under `lib/frontend/` are
+affected. The Dockerfile regenerates `hosted-plugin.js.gz` right after
+`patch-debug-task-tracking.js` runs, since that's the one frontend file this repo
+currently patches. If you add another frontend patch later, regenerate its `.gz` too.
 
 ## Files
 

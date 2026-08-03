@@ -96,6 +96,18 @@ RUN node /tmp/patch-debug-task-tracking.js \
     /home/theia/applications/browser/lib/frontend/vendors-node_modules_theia_plugin-ext_lib_hosted_browser_hosted-plugin_js.js \
     && rm /tmp/patch-debug-task-tracking.js
 
+# The base image ships every frontend (browser-served) file with a pre-built .gz
+# sibling (bundle.js.gz, hosted-plugin.js.gz, ...), and its Express static server
+# unconditionally serves the .gz version to any client advertising gzip support -
+# which is every real browser, always. `curl` without matching Accept-Encoding
+# doesn't, which is exactly what made this invisible: the plain .js file always
+# looked correctly patched, while every actual browser silently kept executing the
+# original, unpatched code with zero indication anything was wrong. Only the plugin
+# frontend file patched above lives under lib/frontend (browser-served) - extension.js
+# is loaded directly by the plugin-host's own `require()`, not served over HTTP, so it
+# doesn't need this. Found the hard way; see README.md's Troubleshooting section.
+RUN gzip -kf /home/theia/applications/browser/lib/frontend/vendors-node_modules_theia_plugin-ext_lib_hosted_browser_hosted-plugin_js.js
+
 ENV THEIA_DEFAULT_PLUGINS=local-dir:/opt/theia-plugins
 ENV DISPLAY=:0
 
