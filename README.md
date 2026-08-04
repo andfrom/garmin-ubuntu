@@ -1,3 +1,5 @@
+![Project Logo](assets/logo.png)
+
 # garmin-ubuntu
 
 A working, Dockerized Garmin Connect IQ dev environment: Eclipse Theia (with the Monkey C
