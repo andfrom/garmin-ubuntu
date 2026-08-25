@@ -87,8 +87,9 @@ commit when it is actually decided or done. Done items get deleted, not ticked.
 ## Portability
 
 - **Remote/ARM64 editing container.** Theia's image is multi-arch and the compiler is
-  a JVM app; a `buildx --platform linux/arm64` variant of `theia/` for a cluster node is
-  plausible. The simulator and SDK Manager stay local (goals.md, non-goals).
+  a JVM app; building `theia/` for `linux/arm64` on a remote host is plausible. Must be
+  built on that host, not pushed through a registry (README, "License"). The simulator
+  and SDK Manager stay local (goals.md, non-goals).
 - **Wayland-native display path.** Not planned (goals.md), but worth re-checking if
   XWayland is ever dropped from a default Ubuntu session.
 

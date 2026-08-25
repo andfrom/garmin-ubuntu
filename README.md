@@ -106,21 +106,25 @@ default - see [Troubleshooting](#troubleshooting) if you forget it.)
   command uses.
 - Both containers run concurrently without conflict.
 
-## Remote / TuringPi
+## Remote / ARM64 hosts
 
 The **Theia image is multi-arch** (`ghcr.io/eclipse-theia/theia-ide/theia-ide:1.60.100`
 publishes both `amd64` and `arm64` manifests), and the SDK's actual compiler toolchain
 (`monkeyc`, `monkeydo`, `era`, `mdd` - all bash wrappers around `monkeybrains.jar`, a JVM app)
 is architecture-independent. So editing, building, and linting Monkey C projects headless
-would work fine on an ARM64 cluster node.
+would work fine on a remote ARM64 host.
 
 **But** `sdkmanager` and `simulator` are precompiled **x86_64-only** native ELF binaries -
-there is no arm64 build of either from Garmin. They cannot run on ARM64 nodes without QEMU
+there is no arm64 build of either from Garmin. They cannot run on ARM64 hosts without QEMU
 user-mode emulation, which is impractical for interactive GTK apps. Keep `sdk-manager` and
 any interactive simulator/debug sessions running locally on an amd64 machine; only the Theia
-*editing/build* container is a candidate for moving to a remote/ARM64 host (e.g.
-`docker buildx build --platform linux/arm64 -t <registry>/garmin-theia ./theia`, push, run
-remotely, and access it over the network or a mesh VPN at `http://<host>:3000`).
+*editing/build* container is a candidate for running on a remote host.
+
+If you do that, **build the image on the remote host itself** (clone this repo there and
+run `docker compose build theia`) rather than building locally and pushing the image
+through a registry: the built image contains the Monkey C extension, which Garmin's SDK
+License Agreement does not permit hosting on a server or redistributing (see
+[License](#license)). Then access it over the network or a mesh VPN at `http://<host>:3000`.
 
 ## Patches applied, and what's needed to drop them
 
