@@ -60,7 +60,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Bake the Monkey C extension into the image itself (local-dir plugins are pre-unpacked
 # directories with package.json + node_modules already present - no npm install needed).
-ARG MONKEYC_EXT_VERSION=1.1.2
+ARG MONKEYC_EXT_VERSION=1.1.3
 RUN mkdir -p /opt/theia-plugins/monkey-c \
     && curl -fsSL "https://garmin.gallery.vsassets.io/_apis/public/gallery/publisher/garmin/extension/monkey-c/${MONKEYC_EXT_VERSION}/assetbyname/Microsoft.VisualStudio.Services.VSIXPackage" -o /tmp/monkey-c.vsix \
     && cd /opt/theia-plugins/monkey-c \
@@ -79,20 +79,23 @@ RUN mkdir -p /opt/theia-plugins/monkey-c \
 # the original custom type in `definition.taskType` instead. The extension's check never
 # matches under Theia, so it hangs forever - "Run"/"Debug" builds successfully (visible
 # in the task terminal) but never proceeds any further, with no error anywhere. Patch
-# every occurrence of the check to accept either field.
-RUN sed -i 's/"monkeyc"===e\.execution\.task\.definition\.type/("monkeyc"===e.execution.task.definition.type||"monkeyc"===e.execution.task.definition.taskType)/g' \
-    /opt/theia-plugins/monkey-c/extension/dist/extension.js
+# every occurrence of the check to accept either field. The grep guard makes the build
+# fail loudly if a new extension version changes the minified shape of that check -
+# `sed` on its own silently matches nothing.
+RUN EXT=/opt/theia-plugins/monkey-c/extension/dist/extension.js \
+    && test "$(grep -o '"monkeyc"===e\.execution\.task\.definition\.type' "$EXT" | wc -l)" -ge 1 \
+    && sed -i 's/"monkeyc"===e\.execution\.task\.definition\.type/("monkeyc"===e.execution.task.definition.type||"monkeyc"===e.execution.task.definition.taskType)/g' "$EXT" \
+    && test "$(grep -o 'definition\.taskType' "$EXT" | wc -l)" -ge 1
 
-# Two more genuine Theia/extension incompatibilities around starting a debug session at
-# all ("Run App" never completing, no error anywhere) - found via live container
-# patching and browser breakpoint debugging across an extensive investigation. Both are
-# real, independently verified fixes; see README.md's Troubleshooting section for the
-# full writeup. Applied by a helper script since one of them patches multi-line source
-# in the Theia-IDE base image itself (not just the extension), which is awkward to
-# express as a single-line sed.
+# One more genuine Theia incompatibility around starting a debug session at all ("Run
+# App" never completing, no error anywhere): Theia never fires onDidEndTaskProcess for
+# CustomExecution tasks, which the extension awaits after its build. Found via live
+# container patching and browser breakpoint debugging, then confirmed against Theia's
+# and VS Code's sources; see README.md's Troubleshooting section for the full writeup.
+# Applied by a helper script since it patches multi-line source in the Theia-IDE base
+# image itself (not the extension), which is awkward to express as a single-line sed.
 COPY patch-debug-task-tracking.js /tmp/patch-debug-task-tracking.js
 RUN node /tmp/patch-debug-task-tracking.js \
-    /opt/theia-plugins/monkey-c/extension/dist/extension.js \
     /home/theia/applications/browser/lib/frontend/vendors-node_modules_theia_plugin-ext_lib_hosted_browser_hosted-plugin_js.js \
     && rm /tmp/patch-debug-task-tracking.js
 

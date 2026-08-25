@@ -55,3 +55,5 @@ condition. A patch without a drop condition is not accepted.
 - Patches are coupled to `theia-ide:1.60.100` and `MONKEYC_EXT_VERSION`; bumping either
   requires re-verifying every `sed`/patch still matches (backlog).
 - Fix 1's necessity is unverified; it stays only until tested (backlog).
+  *Amendment 2026-08-25:* tested against Theia and VS Code sources — neither consults
+  `triggerKind` when resolving — and removed; see git history and README Troubleshooting.

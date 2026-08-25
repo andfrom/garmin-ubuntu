@@ -136,8 +136,7 @@ whether a patch can be dropped yet.
 | Patch | Where | Why it exists | Upstream status |
 |---|---|---|---|
 | `taskType` compatibility (`sed`) | `extension.js` | Theia rewrites a task's `definition.type` to the underlying execution type and moves the extension's own custom type to `definition.taskType` instead; the extension's build-completion check only ever looks at `.type`. | **Permanent** - confirmed intentional Theia behavior, not a bug: [eclipse-theia/theia#8822](https://github.com/eclipse-theia/theia/issues/8822), closed as-is. Nothing to wait for. |
-| Fix 1: double `registerDebugConfigurationProvider` registration | `extension.js` (`patch-debug-task-tracking.js`) | Extension registers its `monkeyc` debug config provider with `DebugConfigurationProviderTriggerKind.Dynamic` only; a second, default-trigger-kind registration was added to make Theia actually invoke it for a static `launch.json` entry. | Not filed anywhere - its own necessity is unverified (see Troubleshooting below). Not currently blocked on anything upstream. |
-| Fix 2: synthesize `$onDidEndTaskProcess` | `hosted-plugin.js` (`patch-debug-task-tracking.js`) | Theia's `TaskServerImpl.fireTaskExitedEvent` only ever fires `onDidEndTaskProcess` for tasks `instanceof ProcessTask`, never for `CustomTask` (what the Monkey C build task actually is) - unlike real VS Code Desktop, where this fires correctly. | Draft ready at `scratch/bugreport-theia-customtask-onDidEndTaskProcess.md` (gitignored, not yet filed). **If fixed upstream, this patch can be dropped entirely.** |
+| Synthesize `$onDidEndTaskProcess` for CustomExecution tasks | `hosted-plugin.js` (`patch-debug-task-tracking.js`) | Theia's `TaskServerImpl.fireTaskExitedEvent` only ever fires `onDidEndTaskProcess` for tasks `instanceof ProcessTask`, never for `CustomTask` (what the Monkey C build task actually is) - unlike real VS Code Desktop, where this fires correctly. | Draft ready at `scratch/bugreport-theia-customtask-onDidEndTaskProcess.md` (gitignored, not yet filed). **If fixed upstream, this patch can be dropped entirely.** |
 | `.gz` regeneration after patching `hosted-plugin.js` | Dockerfile step | The base image ships every browser-served file with a pre-built `.gz` twin that its static server prefers over the plain file for any client advertising gzip support (every real browser) - so patching the plain file alone has zero effect on real users. | Draft ready at `scratch/bugreport-theia-ide-stale-gz-assets.md` (gitignored, not yet filed). Only needed as long as any frontend file under `lib/frontend/` is patched - **if Fix 2 above is ever dropped, this step becomes unnecessary too**, since it's the only frontend file this repo currently patches. |
 
 The two draft bug reports aren't filed yet - they exist so filing them (or not) is a
@@ -171,6 +170,27 @@ Look for `cannot open display` or `Unable to initialize GTK+, DISPLAY not set`. 
 Wayland session (GNOME on 24.04 and later), `DISPLAY` should point at the XWayland
 display (commonly `:0` or `:1` - run `ls /tmp/.X11-unix/` on the host to see what's
 actually there).
+
+### Build fails with `java.awt.AWTError: Can't connect to X11 window server`, or "Task: Building For Device" ends in a Java stack trace
+
+Same cause as the entry above, different symptom: the SDK's resource compiler
+(`monkeybrains.jar`) initializes Java AWT while rasterizing resources, and AWT connects
+to the X server named by `DISPLAY`. If the X server refuses the container (the
+`xhost +si:localuser:$(whoami)` grant is per X session and silently lapses when you log
+out or reboot), the build dies with `Authorization required, but no authorization
+protocol specified` followed by the `AWTError`. Inside the IDE that surfaces as a build
+task ending in a long `org.apache.batik` / `ConnectIQBufferedImage.rasterize` stack trace
+and "Run App" going nowhere. Confirm from inside the container:
+
+```
+docker exec garmin-theia bash -c 'SDK=$(cat ~/.Garmin/ConnectIQ/current-sdk.cfg); cd ~/workspaces/<project> && "$SDK/bin/monkeyc" -d fr265 -f monkey.jungle -o /tmp/t.prg -y ~/.Garmin/ConnectIQ/Keys/developer_key'
+```
+
+Fix: re-run `xhost +si:localuser:$(whoami)` on the host (no container restart needed).
+The build itself does not need a display - the same command succeeds with
+`JAVA_TOOL_OPTIONS=-Djava.awt.headless=true` - so making builds independent of the X
+grant is a candidate hardening (`docs/backlog.md`); the simulator still needs X either
+way.
 
 ### `error while loading shared libraries: libXxx.so.N: cannot open shared object file`
 
@@ -305,7 +325,7 @@ docker compose restart theia
 
 ### "Run App" / Start Debugging hangs forever, no error anywhere
 
-Fixed - `patch-debug-task-tracking.js` applies two fixes for this (see the Dockerfile
+Fixed - `patch-debug-task-tracking.js` patches Theia for this (see the Dockerfile
 comment above it), and the Dockerfile also regenerates `hosted-plugin.js.gz` right after
 (see the next section below - that part turned out to be essential, not optional).
 Documenting the full investigation here since each stage runs in a different process,
@@ -387,7 +407,7 @@ listener and returns a Promise that only resolves when THAT listener fires
   │   → resolveDebugConfigurationWithSubstitutedVariables returns      │
   │   → [Frontend / Debug Adapter launch] Theia launches the adapter   │
   │                                                                     │
-  │ ACTUALLY happens without Fix 2: none of it. The build task is a    │
+  │ ACTUALLY happens without the patch: none of it. The build task is  │
   │ VS Code CustomExecution task (the extension spawns and manages its │
   │ own process via a Pseudoterminal, rather than using Theia's        │
   │ ShellExecution/ProcessExecution types). Theia's own                │
@@ -401,7 +421,7 @@ listener and returns a Promise that only resolves when THAT listener fires
   └────────────────────────────────────────────────────────────────────┘
 ```
 
-Fix 2 in `patch-debug-task-tracking.js` synthesizes the missing `$onDidEndTaskProcess`
+`patch-debug-task-tracking.js` synthesizes the missing `$onDidEndTaskProcess`
 from `onTaskExit`, which *does* fire reliably for every task type and already carries
 the exit code. **Ordering matters**: it must fire `$onDidEndTaskProcess` *before*
 `$onDidEndTask` - the latter deletes the task's execution record from the plugin-host's
@@ -411,9 +431,14 @@ is not found` (a bug in an earlier version of this patch, not in Theia).
 
 **Dead ends ruled out along the way** (kept here so they don't get re-chased):
 
-- The duplicate `registerDebugConfigurationProvider` call in Fix 1 is **not** the cause
-  of this hang - reverting it to a single registration didn't change the outcome. Its
-  own necessity remains unverified rather than confirmed either way.
+- A second `registerDebugConfigurationProvider` registration (an earlier "Fix 1" in
+  this repo, added on the theory that Theia skips a `Dynamic`-trigger provider's
+  `resolveDebugConfiguration` for static `launch.json` entries) is **not** needed and
+  was removed. Neither Theia (`PluginDebugService`, which filters resolvers by type
+  only) nor VS Code (`debugConfigurationManager.resolveConfigurationByProviders`, same)
+  consults `triggerKind` when *resolving* - it only affects *providing* configurations.
+  Worse, two providers of the same type both run the build-and-wait resolver, so the
+  extra registration made every "Run App" build twice.
 - A breakpoint on the shared `resolveDebugConfigurationByResolversChain` helper hitting
   twice is expected, normal behavior (it's called once from `resolveDebugConfiguration`
   and again from `resolveDebugConfigurationWithSubstitutedVariables`) - not evidence of
