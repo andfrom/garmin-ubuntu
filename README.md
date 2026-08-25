@@ -454,6 +454,13 @@ affected. The Dockerfile regenerates `hosted-plugin.js.gz` right after
 `patch-debug-task-tracking.js` runs, since that's the one frontend file this repo
 currently patches. If you add another frontend patch later, regenerate its `.gz` too.
 
+## Documentation
+
+User-facing *how* lives in this README. The *why* — project goals and non-goals, design
+principles, and Architecture Decision Records for every non-trivial choice (two
+containers, Debian 11 base, shared `/home/theia`, the Theia patches, the `~/garmin-dev/`
+layout) — lives in [`docs/`](docs/README.md).
+
 ## Files
 
 | File | Purpose |
