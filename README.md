@@ -471,3 +471,16 @@ layout) — lives in [`docs/`](docs/README.md).
 | `.env.example` | Template for `.env` (committed) |
 | `.env` | Your actual machine-specific paths (gitignored) |
 | `setup.sh` | One-shot bootstrap for a fresh machine |
+
+## License
+
+This repository (Dockerfiles, scripts, patches, documentation) is licensed under the
+[MIT License](LICENSE).
+
+That license covers only what is in this repository. The images it builds download
+third-party materials at build time that are **not** covered by it and are not
+redistributed here: the Garmin Connect IQ SDK Manager and the Garmin Monkey C extension
+are governed by the Garmin Connect IQ SDK License Agreement (bundled with the extension
+as `LICENSE.txt`), which you accept by downloading them - i.e. by building these images.
+The base Theia image is governed by its own licenses. Do not publish built images: the
+Garmin agreement does not permit redistributing or hosting the SDK materials they contain.
