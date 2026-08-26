@@ -90,6 +90,6 @@ smoke test now checks the gzip-served frontend bytes. Remaining:
 
 ## Documentation
 
-- **Split the README.** It is ~27 KB and mixes quick start with a multi-page debugging
-  investigation. Candidate: move the "Run App hang" chain diagram and the `.gz` trap into
-  `docs/` (e.g. `docs/investigations/`) and leave a short pointer in Troubleshooting.
+Done 2026-08-26: the README's two multi-page investigations (the Run App hang chain and
+the stale-`.gz` trap) moved to `docs/investigations/`, leaving short Troubleshooting
+pointers; README is ~21 KB, down from ~30 KB. No open documentation items.

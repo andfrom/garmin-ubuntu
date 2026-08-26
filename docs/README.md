@@ -10,6 +10,7 @@ maintainers and contributors deciding what to change and why.
 | [principles.md](principles.md) | Rules the design must obey, each with a test | A principle is added, dropped, or reprioritized (via an ADR) |
 | [adr/](adr/README.md) | Architecture Decision Records — one file per decision, immutable once accepted | Every non-trivial, hard-to-reverse choice |
 | [backlog.md](backlog.md) | Open items, ordered roughly by value; not a commitment | Continuously |
+| [investigations/](investigations/) | Full write-ups of resolved multi-process bugs (kept so they are not re-derived) | A hard-won diagnosis is worth preserving |
 
 ## Conventions
 
