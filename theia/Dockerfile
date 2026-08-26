@@ -13,7 +13,10 @@
 # bind-mounted SDK binaries. Because this all lives inside the container, it doesn't
 # matter which Ubuntu version the host is running (24.04, 26.x, ...) - only Docker and
 # an X server on the host are required.
-FROM ghcr.io/eclipse-theia/theia-ide/theia-ide:1.60.100
+# Pinned by digest as well as tag: the patches below are verified against exactly these
+# bytes, and a tag can be re-pushed. Bump both together (docker inspect --format
+# '{{index .RepoDigests 0}}' <image>).
+FROM ghcr.io/eclipse-theia/theia-ide/theia-ide:1.60.100@sha256:624499bb7315bd1510c583dee35348390192f8e0e348b124169d7d3cb8dc6cdf
 
 USER root
 
@@ -57,6 +60,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so.62 /usr/lib/x86_64-linux-gnu/libjpeg.so.8
+
+# Make every JVM in this image headless. The SDK's compiler (monkeybrains.jar) initializes
+# Java AWT to rasterize resources, and AWT connects to the X server named by DISPLAY if
+# there is one - so a lapsed `xhost` grant on the host made *builds* fail with
+# java.awt.AWTError, not just the simulator (README, Troubleshooting). Nothing that runs
+# Java here needs a window: the compiler, monkeydo, the extension's language server and
+# its debug adapter all resolve `java` via PATH, and /usr/local/bin precedes /usr/bin. A
+# shim is used rather than JAVA_TOOL_OPTIONS because the latter prints a "Picked up ..."
+# line on every JVM start, straight into the build task's terminal output.
+RUN printf '#!/bin/sh\nexec /usr/bin/java -Djava.awt.headless=true "$@"\n' > /usr/local/bin/java \
+    && chmod +x /usr/local/bin/java
 
 # Bake the Monkey C extension into the image itself (local-dir plugins are pre-unpacked
 # directories with package.json + node_modules already present - no npm install needed).

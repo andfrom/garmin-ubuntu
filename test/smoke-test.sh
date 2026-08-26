@@ -110,6 +110,20 @@ else
   fail "theia web UI not reachable (HTTP $HTTP_CODE)"
 fi
 
+# The bytes a browser actually gets: the base image ships pre-compressed .gz twins of every
+# frontend file and the server prefers them for any client accepting gzip (every browser),
+# so a patched plain file with a stale .gz twin looks fine to plain curl and is a no-op in
+# reality. Check the patched file through the gzip path, and that both paths agree.
+echo "==> Checking the patched frontend file as served with gzip (what browsers receive)"
+HP=vendors-node_modules_theia_plugin-ext_lib_hosted_browser_hosted-plugin_js.js
+PLAIN=$(curl -s "http://127.0.0.1:${PORT}/${HP}" | grep -c "_nativeProcessEnded" || true)
+GZ=$(curl -s -H "Accept-Encoding: gzip" "http://127.0.0.1:${PORT}/${HP}" | gunzip 2>/dev/null | grep -c "_nativeProcessEnded" || true)
+if [ "${GZ:-0}" -ge 2 ] && [ "$GZ" = "$PLAIN" ]; then
+  pass "patched hosted-plugin.js served identically via gzip (${GZ} markers)"
+else
+  fail "gzip-served hosted-plugin.js differs from plain (plain=${PLAIN} gzip=${GZ}) - stale .gz twin?"
+fi
+
 echo
 echo "==> $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

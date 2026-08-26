@@ -60,40 +60,24 @@ commit when it is actually decided or done. Done items get deleted, not ticked.
 
 ## Hardening
 
-- **Promote the task-event repro harness into `test/`.** A 60-line VS Code extension
-  that runs a CustomExecution and a ShellExecution task on activation and logs which
-  `tasks.*` events fire, plus a Debian+Xvfb VS Code Desktop image and a Theia runner,
-  proved (2026-08-26) that VS Code 1.134.0 fires `onDidStartTaskProcess`/
-  `onDidEndTaskProcess` for CustomExecution while Theia 1.60.100 does not — and caught a
-  duplicate-event bug in this repo's own patch. Currently in gitignored scratch; it is
-  the right regression test for the Theia patch and belongs in the repo.
-- **Smoke test coverage for the debug path.** `test/smoke-test.sh` verifies libraries and
-  HTTP; it does not yet exercise "Run App" end-to-end. Proven feasible on 2026-08-25: a
-  puppeteer-core script against host Chromium (headless) opened the workspace, pressed
-  F5, and the container logs + a screenshot showed one build, the simulator, the debug
-  adapter, and a RUNNING session. Needs: an installed SDK, a workspace with
-  `launch.json`, a developer key, and a valid X grant - so it is a local check, not CI.
-  Turn the script into `test/` with those prerequisites documented.
-- **Make builds independent of the X grant.** The resource compiler only needs AWT for
-  rasterizing; `JAVA_TOOL_OPTIONS=-Djava.awt.headless=true` makes `monkeyc` succeed with
-  no display at all (README, "Build fails with `java.awt.AWTError`"). Set it in the
-  theia image for builds - check the language server and debug adapter are unaffected -
-  so a lapsed `xhost` grant only breaks the simulator, not the build.
-- **Debug adapter `setExceptionBreakpoints` internal error.** Every session start logs an
-  lsp4j `InvocationTargetException` from `IDebugProtocolServer.setExceptionBreakpoints`
-  (Garmin's `DebugServer.jar`); the session still runs. Determine whether Theia sends a
-  request shape VS Code doesn't, or the adapter is at fault; harmless until proven
-  otherwise.
-- **Pin the base image digest**, not just the `1.60.100` tag, so a rebuild months later
-  reproduces the same bytes the patches were verified against.
-- **Pin the SDK Manager download.** `connectiq-sdk-manager-linux.zip` has no version in
-  its URL; record its `sha256` in the Dockerfile and fail the build on mismatch, so an
-  upstream change is a deliberate bump rather than a surprise.
-- **Smoke-test the served (gzip) bytes.** `test/smoke-test.sh` checks HTTP reachability
-  with plain `curl`, which never sees the `.gz` twin that real browsers get. Add a fetch
-  of `hosted-plugin.js` with `Accept-Encoding: gzip`, gunzipped, asserting the patch's
-  marker is present — the exact trap that cost hours here (README, "Editing a frontend
-  `.js` file has no effect").
+Done 2026-08-26 (kept here as a short record until the first release's CHANGELOG; the
+detail lives in git and in `test/README.md`): task-event regression test and headless
+debug-path check moved into `test/`; builds made display-independent via a headless
+`java` shim; base image pinned by digest; SDK Manager archive pinned by `sha256`;
+smoke test now checks the gzip-served frontend bytes. Remaining:
+
+- **Debug adapter `setExceptionBreakpoints` internal error — root cause known, decide if
+  worth fixing.** Every debug session start logs an lsp4j
+  `SEVERE: Internal error: java.lang.reflect.InvocationTargetException` whose root cause
+  (confirmed 2026-08-26 by decompiling the adapter) is
+  `UnsupportedOperationException` thrown by lsp4j's **default** implementation of
+  `IDebugProtocolServer.setExceptionBreakpoints`: Garmin's `DebugServer.jar` does not
+  implement that DAP request, and Theia calls it during session init. The session runs
+  fine regardless (verified: build → simulator → adapter → RUNNING all succeed). Options:
+  ignore it (harmless log noise); or have the extension advertise
+  `supportsExceptionOptions: false` / no exception breakpoint filters so Theia stops
+  sending the request. Low priority; document in README Troubleshooting so it isn't
+  re-chased as a failure.
 
 ## Portability
 

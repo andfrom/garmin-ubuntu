@@ -323,6 +323,18 @@ restart the `theia` container so it picks up the change:
 docker compose restart theia
 ```
 
+### Debug session logs `SEVERE: Internal error ... setExceptionBreakpoints`, but works
+
+Starting a debug session prints a Java stack trace in `docker logs garmin-theia`:
+`org.eclipse.lsp4j.jsonrpc.RemoteEndpoint fallbackResponseError / SEVERE: Internal error:
+java.lang.reflect.InvocationTargetException`, rooted in an
+`UnsupportedOperationException` from `IDebugProtocolServer.setExceptionBreakpoints`. This
+is **harmless** - the build runs, the simulator launches, and the session reaches RUNNING.
+Cause: Garmin's debug adapter (`DebugServer.jar`) doesn't implement the DAP
+`setExceptionBreakpoints` request, so lsp4j's default method throws; Theia sends the
+request during session init regardless and logs the rejection. Nothing to fix in this
+repo; noted so the stack trace isn't mistaken for a failure.
+
 ### "Run App" / Start Debugging hangs forever, no error anywhere
 
 Fixed - `patch-debug-task-tracking.js` patches Theia for this (see the Dockerfile

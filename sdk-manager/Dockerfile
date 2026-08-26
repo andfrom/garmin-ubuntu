@@ -45,7 +45,13 @@ RUN groupadd -g ${GID} garmin \
     && useradd -m -u ${UID} -g ${GID} -d /home/theia -s /bin/bash garmin
 
 WORKDIR /opt/sdk-manager
+# The download URL carries no version, so the archive is pinned by checksum instead: when
+# Garmin publishes a new SDK Manager the build fails here and the bump is a deliberate,
+# reviewed change (update the hash after checking the new version works). Verified
+# 2026-08-26 for the archive containing SDK Manager 1.0.x (3.6 MB, 19 files).
+ARG SDKMANAGER_SHA256=481ea86078ce2e8c7010475e4e2aa2d35446ba6671090443bf222396993c0efc
 RUN curl -fsSL https://developer.garmin.com/downloads/connect-iq/sdk-manager/connectiq-sdk-manager-linux.zip -o sdkmanager.zip \
+    && echo "${SDKMANAGER_SHA256}  sdkmanager.zip" | sha256sum -c - \
     && unzip -q sdkmanager.zip \
     && rm sdkmanager.zip \
     && chmod +x bin/sdkmanager \
