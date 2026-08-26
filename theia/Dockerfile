@@ -1,4 +1,4 @@
-# Theia IDE preloaded with the Garmin Monkey C extension, for Connect IQ development.
+# Theia IDE that fetches the Garmin Monkey C extension at build time, for Connect IQ dev.
 #
 # This is deliberately NOT the SDK Manager - the SDK Manager is a separate GUI-only
 # image (see ../sdk-manager). Both containers share one host directory bind-mounted

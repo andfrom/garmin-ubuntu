@@ -9,7 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Added
 
 - Two-container Garmin Connect IQ development environment for Ubuntu 24.04+: Eclipse
-  Theia IDE with the Monkey C extension baked in, and the Connect IQ SDK Manager, both
+  Theia IDE that fetches the Monkey C extension from the VS Marketplace at build time,
+  and the Connect IQ SDK Manager, both
   Debian 11-based so Garmin's GTK/WebKit2GTK binaries run without library surgery.
 - `setup.sh` one-shot bootstrap (`.env` generation, data directories, X access, build)
   and `docker-compose.yml` wiring with the SDK Manager profile-gated for on-demand use.

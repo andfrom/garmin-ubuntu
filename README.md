@@ -2,9 +2,11 @@
 
 # garmin-ubuntu
 
-A working, Dockerized Garmin Connect IQ dev environment: Eclipse Theia (with the Monkey C
-extension baked in) plus the Connect IQ SDK Manager, as two sibling containers instead of one
-combined image. Built to run on Ubuntu 24.04, and should keep working on later Ubuntu
+A working, Dockerized Garmin Connect IQ dev environment: Eclipse Theia plus the Connect IQ
+SDK Manager, as two sibling containers instead of one combined image. The Theia image
+fetches Garmin's official Monkey C extension from the Visual Studio Marketplace at build
+time - this repository doesn't ship or redistribute it (see
+[The Monkey C extension, and where it comes from](#the-monkey-c-extension-and-where-it-comes-from)). Built to run on Ubuntu 24.04, and should keep working on later Ubuntu
 releases (26.x, ...) unmodified - see [Why Ubuntu version portability just works](#why-ubuntu-version-portability-just-works)
 below.
 
@@ -27,7 +29,9 @@ If you already have SDKs/devices installed from a native (non-Docker) SDK Manage
 
 ## Layout
 
-- **`theia/`** - Eclipse Theia IDE with the Garmin Monkey C VSCode extension baked in.
+- **`theia/`** - Eclipse Theia IDE; the build fetches the Garmin Monkey C VS Code
+  extension from the Marketplace and unpacks it into the image (nothing extension-related
+  is committed to this repo).
   Persistent web server on `:3000`. Also runs the SDK's native `simulator` binary when you
   hit "Run" on a Monkey C project - that's a GTK app, not a web thing, so this container
   needs X11 access too even though it has no GUI of its own.
