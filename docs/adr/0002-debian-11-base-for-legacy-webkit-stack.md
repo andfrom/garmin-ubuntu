@@ -39,4 +39,4 @@ packages (`libwebkit2gtk-4.0-37 libsoup2.4-1 libgtk-3-0 libsm6 libusb-1.0-0`) â€
 - Both images must stay on the *same* base so the shared SDK data (installed by one,
   executed by the other) sees an identical library ABI.
 - Host portability follows for free: nothing here depends on the host's package
-  versions (goals.md G2, principles.md P1).
+  versions (goals.md goal 2, principles.md P1).

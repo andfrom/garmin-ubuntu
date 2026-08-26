@@ -48,8 +48,8 @@ fi
 echo "==> Building images"
 # --profile is required here even though sdk-manager isn't started by default:
 # `profiles:` gates `docker compose build` too, not just `up` - omitting this flag
-# silently skips building sdk-manager entirely (found the hard way: a stale image
-# was reused indefinitely without error, mid-project).
+# silently skips building sdk-manager entirely - the stale image is reused with no
+# warning.
 docker compose --profile sdk-manager build
 
 echo

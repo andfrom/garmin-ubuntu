@@ -100,10 +100,10 @@ default - see [Troubleshooting](#troubleshooting) if you forget it.)
   login screen).
 - Theia web UI reachable on `:3000`, Monkey C extension activates automatically
   (`Debug configuration provider has been registered: monkeyc` in the container logs).
-- From inside the **Theia** container: started the SDK's `simulator` binary and pushed a
-  compiled `.prg` to it with `monkeydo <file>.prg <device_id>` - rendered as a simulated
-  watch on the desktop. This is the same mechanism the Monkey C extension's "Run"/"Debug"
-  command uses.
+- The **Theia** container can start the SDK's `simulator` binary and push a compiled
+  `.prg` to it with `monkeydo <file>.prg <device_id>`, rendering a simulated watch on the
+  desktop - the same mechanism the Monkey C extension's "Run"/"Debug" command uses.
+  (`test/debug-path.sh` exercises this end to end via the IDE.)
 - Both containers run concurrently without conflict.
 
 ## Remote / ARM64 hosts
@@ -136,17 +136,15 @@ whether a patch can be dropped yet.
 | Patch | Where | Why it exists | Upstream status |
 |---|---|---|---|
 | `taskType` compatibility (`sed`) | `extension.js` | Theia rewrites a task's `definition.type` to the underlying execution type and moves the extension's own custom type to `definition.taskType` instead; the extension's build-completion check only ever looks at `.type`. | **Permanent** - confirmed intentional Theia behavior, not a bug: [eclipse-theia/theia#8822](https://github.com/eclipse-theia/theia/issues/8822), closed as-is. Nothing to wait for. |
-| Synthesize `$onDidEndTaskProcess` for CustomExecution tasks | `hosted-plugin.js` (`patch-debug-task-tracking.js`) | Theia's `TaskServerImpl.fireTaskExitedEvent` only ever fires `onDidEndTaskProcess` for tasks `instanceof ProcessTask`, never for `CustomTask` (what the Monkey C build task actually is) - unlike real VS Code Desktop, where this fires correctly. | Draft ready at `scratch/bugreport-theia-customtask-onDidEndTaskProcess.md` (gitignored, not yet filed). **If fixed upstream, this patch can be dropped entirely.** |
-| `.gz` regeneration after patching `hosted-plugin.js` | Dockerfile step | The base image ships every browser-served file with a pre-built `.gz` twin that its static server prefers over the plain file for any client advertising gzip support (every real browser) - so patching the plain file alone has zero effect on real users. | Draft ready at `scratch/bugreport-theia-ide-stale-gz-assets.md` (gitignored, not yet filed). Only needed as long as any frontend file under `lib/frontend/` is patched - **if Fix 2 above is ever dropped, this step becomes unnecessary too**, since it's the only frontend file this repo currently patches. |
+| Synthesize `$onDidEndTaskProcess` for CustomExecution tasks | `hosted-plugin.js` (`patch-debug-task-tracking.js`) | Theia's `TaskServerImpl.fireTaskExitedEvent` only ever fires `onDidEndTaskProcess` for tasks `instanceof ProcessTask`, never for `CustomTask` (what the Monkey C build task actually is) - unlike real VS Code Desktop, where this fires correctly. | A bug report is drafted but not yet filed upstream. **If fixed upstream, this patch can be dropped entirely.** |
+| `.gz` regeneration after patching `hosted-plugin.js` | Dockerfile step | The base image ships every browser-served file with a pre-built `.gz` twin that its static server prefers over the plain file for any client advertising gzip support (every real browser) - so patching the plain file alone has zero effect on real users. | A documentation request is drafted but not yet filed upstream. Only needed as long as any frontend file under `lib/frontend/` is patched - **if the `$onDidEndTaskProcess` patch above is ever dropped, this step becomes unnecessary too**, since it's the only frontend file this repo currently patches. |
 
-The two draft bug reports aren't filed yet - they exist so filing them (or not) is a
-deliberate choice, not something to lose track of. If either gets filed, link the actual
-issue number in this table and in the corresponding Dockerfile comment.
+Neither report is filed upstream yet. If either is filed, link the issue number in this
+table and in the corresponding Dockerfile comment.
 
 ## Troubleshooting
 
-Every entry below is a real failure hit and diagnosed while building this repo, not a
-hypothetical.
+Every entry below is a real, diagnosed failure, not a hypothetical.
 
 ### GUI window never appears (SDK Manager, or the simulator launched from Theia)
 
@@ -194,9 +192,9 @@ way.
 
 ### `error while loading shared libraries: libXxx.so.N: cannot open shared object file`
 
-A missing runtime library - the same class of bug that broke this project for months
-before (`libwebkit2gtk-4.0.so.37`, `libsoup-2.4.so.1`, `libSM.so.6`,
-`libusb-1.0.so.0` have all been hit here). `apt-get install` exiting 0 does **not** mean
+A missing runtime library - the same class of bug behind the shared-library failures
+above (`libwebkit2gtk-4.0.so.37`, `libsoup-2.4.so.1`, `libSM.so.6`, `libusb-1.0.so.0`
+are all in this class). `apt-get install` exiting 0 does **not** mean
 the binary can actually run - it only means the packages you listed were installable, not
 that you listed the right ones. Diagnose directly against the binary itself:
 
@@ -289,7 +287,7 @@ cause 1, since the config files are bind-mounted and read live.
 
 ### `docker compose build` doesn't seem to change the sdk-manager image at all
 
-Two independent gotchas, both found while building the smoke test:
+Two independent gotchas:
 
 1. **`profiles:` gates `build`, not just `up`.** A profile-gated service (`sdk-manager`
    here) is silently skipped by a plain `docker compose build`, with no warning - it just
@@ -303,13 +301,13 @@ Two independent gotchas, both found while building the smoke test:
    docker compose --profile sdk-manager build --no-cache
    ```
 
-`test/smoke-test.sh` always builds with both of these accounted for, precisely because
-they produced false "it's fine" results here.
+`test/smoke-test.sh` always builds with both of these accounted for, since either can
+otherwise produce a false "it's fine" result.
 
 ### Port 3000 already in use
 
-Something else on the host (or another container) is bound to it - a Grafana snap
-instance did exactly this during earlier development. Find and stop it, or change the
+Something else on the host (or another container) is bound to it - for example another
+local service already using port 3000. Find and stop it, or change the
 host-side port in `docker-compose.yml`'s `ports:` mapping (`"3001:3000"`, etc.) and open
 that port instead.
 

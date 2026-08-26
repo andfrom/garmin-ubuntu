@@ -1,7 +1,10 @@
 # 0005 — Patch Theia/extension in the Dockerfile, each patch with a stated drop condition
 
 **Status:** Accepted (backfilled 2026-08-25 from commits `44c21a9` 2026-08-02 and
-`7ac1126`/`c86d8d9` 2026-08-03)
+`7ac1126`/`c86d8d9` 2026-08-03). The "Fix 1" registration this ADR mentions was later
+removed as redundant (it doubled every build and rested on a premise Theia's and VS
+Code's sources contradict); see the "dead ends" section of
+[`docs/investigations/run-app-hang.md`](../investigations/run-app-hang.md) and git history.
 **Date:** 2026-08-03
 
 ## Context
@@ -55,5 +58,5 @@ condition. A patch without a drop condition is not accepted.
 - Patches are coupled to `theia-ide:1.60.100` and `MONKEYC_EXT_VERSION`; bumping either
   requires re-verifying every `sed`/patch still matches (backlog).
 - Fix 1's necessity is unverified; it stays only until tested (backlog).
-  *Amendment 2026-08-25:* tested against Theia and VS Code sources — neither consults
-  `triggerKind` when resolving — and removed; see git history and README Troubleshooting.
+  (Later tested against Theia's and VS Code's sources and removed as redundant; see
+  [`docs/investigations/run-app-hang.md`](../investigations/run-app-hang.md).)

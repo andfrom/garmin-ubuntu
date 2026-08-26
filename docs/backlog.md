@@ -5,8 +5,8 @@ commit when it is actually decided or done. Done items get deleted, not ticked.
 
 ## Upstream
 
-- **File the two drafted Theia bug reports.** Drafts exist locally (gitignored
-  `scratch/`) for (a) `TaskServerImpl.fireTaskExitedEvent` never firing
+- **File the two drafted Theia bug reports.** Reports are drafted (not committed) for
+  (a) `TaskServerImpl.fireTaskExitedEvent` never firing
   `onDidEndTaskProcess` for `CustomTask`, and (b) `theia-ide`'s static server preferring
   stale pre-built `.gz` assets. Filing them is what makes the Theia patch and the `.gz`
   regeneration step droppable (README "Patches applied" table). Once filed, link the
@@ -35,9 +35,10 @@ commit when it is actually decided or done. Done items get deleted, not ticked.
      needle count ≠ 1 and the `taskType` `sed` is guarded by `grep` counts, so a
      shape change in either upstream fails the build instead of passing silently.
   2. `test/smoke-test.sh` passes (`ldd` clean, HTTP up, extension activation log line).
-  3. The debug path works end-to-end — the only thing that actually proves a bump is
-     safe, and the one check that does not exist headlessly yet (Hardening, first
-     item). Until it does, a bump can only be *proposed*, not merged.
+  3. The debug path works end-to-end. `test/debug-path.sh` does this, but it needs a real
+     SDK, a developer key, and a display, so it is a local check, not a CI gate. Until an
+     automatable form exists, a bump that a human has not run `debug-path.sh` against can
+     only be *proposed*, not merged.
 
   *Mechanism, two viable shapes:*
   - **Renovate**-style: `FROM` tags are handled natively; `MONKEYC_EXT_VERSION` needs a
@@ -55,20 +56,10 @@ commit when it is actually decided or done. Done items get deleted, not ticked.
   that needs a human to re-derive the patch. Theia and the extension should bump
   independently — a needle break on one must not block the other.
 
-  *Prerequisites already listed elsewhere:* headless debug-path check (Hardening),
-  base-image digest pin and SDK Manager checksum pin (Hardening).
+  *Prerequisite still open:* an automatable (CI-runnable) form of the debug-path check;
+  `test/debug-path.sh` exists but needs a real SDK, key, and display.
 
 ## Hardening
-
-Done 2026-08-26 (kept here as a short record until the first release's CHANGELOG; the
-detail lives in git and in `test/README.md`): task-event regression test and headless
-debug-path check moved into `test/`; builds made display-independent via a headless
-`java` shim; base image pinned by digest; SDK Manager archive pinned by `sha256`;
-smoke test now checks the gzip-served frontend bytes and that the SDK Manager GUI
-launches under Xvfb (8 checks); the Monkey C extension-activation assertion moved into
-`task-events.sh`; and CI now runs shellcheck, `setup.sh --no-build` (so the real
-bootstrap path is exercised, not a copy), `docker compose config`, and an arm64 build
-of the Theia image. Remaining:
 
 - **Debug adapter `setExceptionBreakpoints` internal error — root cause known, decide if
   worth fixing.** Every debug session start logs an lsp4j
@@ -85,15 +76,10 @@ of the Theia image. Remaining:
 
 ## Portability
 
-- **Remote/ARM64 editing container.** Theia's image is multi-arch and the compiler is
-  a JVM app; building `theia/` for `linux/arm64` on a remote host is plausible. Must be
-  built on that host, not pushed through a registry (README, "License"). The simulator
-  and SDK Manager stay local (goals.md, non-goals).
+- **Remote/ARM64 editing container.** The Theia image builds for `linux/arm64` (CI
+  verifies this), and the compiler is a JVM app, so running the editing/build container
+  on a remote arm64 host works. Build it on that host rather than pushing the image
+  through a registry (README, "License"). The simulator and SDK Manager are x86_64-only
+  and stay local (goals.md, non-goals). Open: document the remote-host workflow.
 - **Wayland-native display path.** Not planned (goals.md), but worth re-checking if
   XWayland is ever dropped from a default Ubuntu session.
-
-## Documentation
-
-Done 2026-08-26: the README's two multi-page investigations (the Run App hang chain and
-the stale-`.gz` trap) moved to `docs/investigations/`, leaving short Troubleshooting
-pointers; README is ~21 KB, down from ~30 KB. No open documentation items.

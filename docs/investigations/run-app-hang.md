@@ -1,17 +1,16 @@
 # Investigation: "Run App" / Start Debugging hangs forever, no error anywhere
 
-*Resolved. This is the full write-up of a bug that is now fixed by
-`theia/patch-debug-task-tracking.js`; the [README Troubleshooting entry](../../README.md#run-app--start-debugging-hangs-forever-no-error-anywhere)
-is the short version. Kept because the diagnosis spans three OS processes and was hard to
-pin down — worth not re-deriving. The upstream bug report drafted from this is tracked in
-[`docs/backlog.md`](../backlog.md) (Upstream).*
+*Resolved. Fixed by `theia/patch-debug-task-tracking.js`, which patches Theia to fire the
+event the extension waits on; the Dockerfile also regenerates `hosted-plugin.js.gz` right
+after (see [`stale-gz-assets.md`](stale-gz-assets.md) — that part is essential, not
+optional). The [README Troubleshooting entry](../../README.md#run-app--start-debugging-hangs-forever-no-error-anywhere)
+is the short version, and the upstream bug report drafted from this is tracked in
+[`docs/backlog.md`](../backlog.md) (Upstream). This full write-up is kept because the
+diagnosis spans three OS processes and is not worth re-deriving.*
 
-Fixed - `patch-debug-task-tracking.js` patches Theia for this (see the Dockerfile
-comment above it), and the Dockerfile also regenerates `hosted-plugin.js.gz` right after
-(see the next section below - that part turned out to be essential, not optional).
-Documenting the full investigation here since each stage runs in a different process,
-which made this hard to pin down: three independent execution contexts are involved,
-only one of which (the frontend) is reachable via ordinary browser DevTools.
+Each stage of the "Run App" flow runs in a different process, which is what made this
+hard to pin down: three independent execution contexts are involved, only one of which
+(the frontend) is reachable via ordinary browser DevTools.
 
 **Execution contexts involved** (which OS process each stage runs in):
 
@@ -126,6 +125,6 @@ is not found` (a bug in an earlier version of this patch, not in Theia).
   a duplicate-registration bug.
 - Firefox DevTools' Sources panel appearing to show stale code, `console.log` calls
   embedded in frontend files never firing, and even a blocking `alert()` never
-  triggering, all turned out to be the **same single cause**: see the next
-  troubleshooting entry below. It looked like a browser-execution mystery for hours; it
-  was actually the server silently sending stale pre-compressed bytes the whole time.
+  triggering, all turned out to be the **same single cause**, covered in
+  [`stale-gz-assets.md`](stale-gz-assets.md): the server was serving stale pre-compressed
+  bytes, so the patched source never reached the browser.

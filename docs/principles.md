@@ -54,10 +54,9 @@ A check that can pass while the real thing fails is not a check. In particular: 
 served to the browser is verified with `Accept-Encoding: gzip` (the base image serves
 pre-built `.gz` twins), and "installable" is never taken to mean "runnable" (`ldd`
 against the actual binary, not `apt-get`'s exit code).
-*Test: `test/smoke-test.sh` runs `ldd | grep 'not found'` against both GUI binaries.
-Fetching patched frontend files with `Accept-Encoding: gzip` is not yet automated —
-backlog, "Smoke-test the served (gzip) bytes" — until it is, that check is manual:
-`curl -H "Accept-Encoding: gzip" <url> | gunzip | grep <marker>`.*
+*Test: `test/smoke-test.sh` runs `ldd | grep 'not found'` against both GUI binaries, and
+fetches the patched frontend file with `Accept-Encoding: gzip`, gunzips it, and asserts it
+matches the plain file — so a stale `.gz` twin fails the build.*
 
 ## P8 — Troubleshooting is a record, not a guess
 A troubleshooting entry is added only for a failure that was actually hit and diagnosed
