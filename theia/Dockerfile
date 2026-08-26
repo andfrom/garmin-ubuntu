@@ -22,19 +22,19 @@ USER root
 
 # The base image's `theia` user is uid/gid 101, but bind-mounted host directories
 # (workspaces, ConnectIQ SDK data) are owned by the host user - remap `theia` to match
-# instead of fighting permissions at runtime (this bit earlier attempts: SDK-installed
-# files showed up with a blank owner / group `messagebus` due to exactly this mismatch).
+# instead of fighting permissions at runtime. Without this remap, SDK-installed files
+# appear with a blank owner / group `messagebus`.
 # theia's home dir itself (/home/theia) is NOT relocated - the base image's own launcher
 # hardcodes /home/theia/applications/.../main.js as an absolute path, so moving the
 # account's home (even with usermod -m, which relocates the actual files) breaks the
-# container outright (learned by breaking it: "Cannot find module
-# '/home/theia/applications/browser/lib/backend/main.js'").
+# container outright: "Cannot find module
+# '/home/theia/applications/browser/lib/backend/main.js'".
 #
 # The base image also ships a pre-existing `node` user that happens to already sit at
 # uid/gid 1000 - once `theia` is remapped to the same uid, both accounts resolve from
 # that uid via getpwuid(), and glibc/the JVM pick whichever entry comes first in
 # /etc/passwd (here: `node`, whose home is still the untouched default /home/node).
-# This bit us for real: Java's `user.home` system property - which the Monkey C
+# Java's `user.home` system property - which the Monkey C
 # extension's bundled LanguageServer.jar uses to find ~/.Garmin/ConnectIQ - resolves via
 # getpwuid(), not the $HOME env var, so setting ENV HOME alone was not enough; it kept
 # resolving to /home/node regardless. Fix: repoint `node`'s passwd entry (not its files -
@@ -47,6 +47,11 @@ RUN groupmod -o -g ${GID} theia \
     && usermod -d /home/theia node \
     && chown -R theia:theia /home/theia
 
+# Some GTK/WebKit code paths look for libjpeg.so.8, but Debian 11 ships libjpeg.so.62
+# (libjpeg62-turbo); the final step symlinks one to the other. It derives the arch's
+# multiarch lib dir from the installed file rather than hardcoding x86_64-linux-gnu, so
+# the image also builds on arm64 (aarch64-linux-gnu) - see docs/adr/0002 and the arm64
+# CI job.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-17-jre-headless \
     libwebkit2gtk-4.0-37 \
@@ -59,7 +64,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     unzip \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so.62 /usr/lib/x86_64-linux-gnu/libjpeg.so.8
+    && JPEG="$(ls /usr/lib/*/libjpeg.so.62 | head -1)" \
+    && ln -sf "$JPEG" "${JPEG%.62}.8"
 
 # Make every JVM in this image headless. The SDK's compiler (monkeybrains.jar) initializes
 # Java AWT to rasterize resources, and AWT connects to the X server named by DISPLAY if
@@ -104,8 +110,8 @@ RUN EXT=/opt/theia-plugins/monkey-c/extension/dist/extension.js \
 # One more genuine Theia incompatibility around starting a debug session at all ("Run
 # App" never completing, no error anywhere): Theia never fires onDidEndTaskProcess for
 # CustomExecution tasks, which the extension awaits after its build. Found via live
-# container patching and browser breakpoint debugging, then confirmed against Theia's
-# and VS Code's sources; see README.md's Troubleshooting section for the full writeup.
+# Confirmed against Theia's and VS Code's sources; the full write-up is in
+# docs/investigations/run-app-hang.md.
 # Applied by a helper script since it patches multi-line source in the Theia-IDE base
 # image itself (not the extension), which is awkward to express as a single-line sed.
 COPY patch-debug-task-tracking.js /tmp/patch-debug-task-tracking.js
@@ -123,7 +129,7 @@ RUN HP=/home/theia/applications/browser/lib/frontend/vendors-node_modules_theia_
 # original, unpatched code with zero indication anything was wrong. Only the plugin
 # frontend file patched above lives under lib/frontend (browser-served) - extension.js
 # is loaded directly by the plugin-host's own `require()`, not served over HTTP, so it
-# doesn't need this. Found the hard way; see README.md's Troubleshooting section.
+# doesn't need this. See docs/investigations/stale-gz-assets.md.
 RUN gzip -kf /home/theia/applications/browser/lib/frontend/vendors-node_modules_theia_plugin-ext_lib_hosted_browser_hosted-plugin_js.js
 
 ENV THEIA_DEFAULT_PLUGINS=local-dir:/opt/theia-plugins

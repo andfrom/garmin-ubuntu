@@ -1,8 +1,7 @@
 // Applies one fix for a real Theia <-> Monkey C extension incompatibility around
 // starting a debug session ("Run App" / the green play button never completing).
-// Found and verified via live container patching + browser breakpoint debugging, and
-// confirmed against Theia's and VS Code's sources; see README.md's Troubleshooting
-// section for the full investigation.
+// Confirmed against Theia's and VS Code's sources; the full investigation is in
+// docs/investigations/run-app-hang.md.
 //
 // Usage: node patch-debug-task-tracking.js <hosted-plugin.js path>
 const fs = require("fs");
@@ -21,9 +20,9 @@ if (!hostedPluginPath) throw new Error("usage: patch-debug-task-tracking.js <hos
 // from that reliable signal instead - and does so *before* $onDidEndTask, since
 // TasksExtImpl.$onDidEndTask removes the task's execution record as part of its own
 // cleanup, and $onDidEndTaskProcess needs that record to still exist when it runs
-// (confirmed live: calling them in the wrong order throws "Task execution with id N is
-// not found" - a bug in an earlier version of this patch, not in Theia; the same ordering
-// constraint is documented in eclipse-theia/theia PR #8141).
+// (calling them in the wrong order throws "Task execution with id N is not found" - a
+// bug in an earlier version of this patch, not in Theia; the same ordering constraint is
+// documented in eclipse-theia/theia PR #8141).
 {
   let src = fs.readFileSync(hostedPluginPath, "utf8");
 

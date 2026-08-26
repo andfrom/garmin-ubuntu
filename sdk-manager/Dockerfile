@@ -31,8 +31,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # or env var. Some of what lives under that path (e.g. current-sdk.cfg) stores an
 # *absolute* path back to the SDK directory itself. If this container's $HOME differs
 # from the Theia container's $HOME, anything this SDK Manager writes there becomes
-# unresolvable from inside Theia (found the hard way: "Unable to determine the current
-# SDK" when a stale absolute path pointed somewhere neither container could see). So
+# unresolvable from inside Theia ("Unable to determine the current SDK", when a stale
+# absolute path points somewhere neither container can see). So
 # this account's home is deliberately set to match the theia image's home
 # (/home/theia - theia's own launcher hardcodes that path internally, so it can't be
 # relocated on that side; see theia/Dockerfile), even though this account is named
