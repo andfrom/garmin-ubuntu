@@ -8,7 +8,7 @@
 # launch.json (type "monkeyc"); a valid X grant (`xhost +si:localuser:$(whoami)`) so the
 # simulator can open; Node >= 18 and a Chromium/Chrome on the host (CHROME=/path).
 set -uo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 WS=${1:?usage: test/debug-path.sh <workspace-name> [port]}; PORT=${2:-3000}
 PASS=0; FAIL=0
 pass() { echo "OK:   $1"; PASS=$((PASS + 1)); }
@@ -21,9 +21,9 @@ echo "==> Opening workspace '$WS' on :$PORT and pressing F5 (this takes ~2 minut
 (cd test && node debug-path.mjs "$WS" "$PORT") || fail "browser driver failed"
 AFTER=$(docker logs garmin-theia 2>&1 | grep -c "Created new custom task")
 BUILDS=$((AFTER - BEFORE))
-[ "$BUILDS" = 1 ] && pass "exactly one build task ran" || fail "expected 1 build task, saw $BUILDS"
-docker exec garmin-theia pgrep -f "DebugServer.jar" >/dev/null && pass "Monkey C debug adapter (DebugServer.jar) is running" || fail "debug adapter not running - 'Run App' did not get past the build (see docker logs garmin-theia)"
-docker exec garmin-theia pgrep -x simulator >/dev/null && pass "simulator is running" || fail "simulator not running"
+if [ "$BUILDS" = 1 ]; then pass "exactly one build task ran"; else fail "expected 1 build task, saw $BUILDS"; fi
+if docker exec garmin-theia pgrep -f "DebugServer.jar" >/dev/null; then pass "Monkey C debug adapter (DebugServer.jar) is running"; else fail "debug adapter not running - 'Run App' did not get past the build (see docker logs garmin-theia)"; fi
+if docker exec garmin-theia pgrep -x simulator >/dev/null; then pass "simulator is running"; else fail "simulator not running"; fi
 if docker logs --since "$SINCE" garmin-theia 2>&1 | grep -q "AWTError"; then fail "build hit java.awt.AWTError (X grant lapsed? see README Troubleshooting)"; fi
 echo "    screenshot: test/out/debug-path.png"
 # Leave the IDE as we found it: end the session's processes we started.

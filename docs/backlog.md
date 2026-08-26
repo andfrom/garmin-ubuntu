@@ -64,7 +64,11 @@ Done 2026-08-26 (kept here as a short record until the first release's CHANGELOG
 detail lives in git and in `test/README.md`): task-event regression test and headless
 debug-path check moved into `test/`; builds made display-independent via a headless
 `java` shim; base image pinned by digest; SDK Manager archive pinned by `sha256`;
-smoke test now checks the gzip-served frontend bytes. Remaining:
+smoke test now checks the gzip-served frontend bytes and that the SDK Manager GUI
+launches under Xvfb (8 checks); the Monkey C extension-activation assertion moved into
+`task-events.sh`; and CI now runs shellcheck, `setup.sh --no-build` (so the real
+bootstrap path is exercised, not a copy), `docker compose config`, and an arm64 build
+of the Theia image. Remaining:
 
 - **Debug adapter `setExceptionBreakpoints` internal error — root cause known, decide if
   worth fixing.** Every debug session start logs an lsp4j

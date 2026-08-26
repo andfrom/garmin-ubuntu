@@ -14,21 +14,24 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # setup.sh also grants X access and builds; CI only needs the .env it would
-      # generate, since the smoke test builds the images itself (--no-cache).
-      - name: Generate .env
-        run: |
-          sed -e "s|__HOME__|$HOME|g" \
-              -e "s|^HOST_UID=.*|HOST_UID=$(id -u)|" \
-              -e "s|^HOST_GID=.*|HOST_GID=$(id -g)|" \
-              .env.example > .env
-          . ./.env
-          mkdir -p "$CONNECTIQ_DATA_DIR" "$WORKSPACES_DIR" "$THEIA_CONFIG_DIR"
+      # Lint the shell scripts (shellcheck is preinstalled on ubuntu-latest).
+      - name: shellcheck
+        run: shellcheck -x setup.sh test/*.sh
 
-      # Builds both images from scratch, checks the GTK binaries' shared libraries,
-      # the extension unpack, and that the Theia backend boots and serves HTTP.
-      # The simulator ldd check self-skips (no SDK installed here); the X11/GUI and
-      # debug-path checks are manual by design - see the script header.
+      # Exercise the real bootstrap path instead of duplicating its .env logic here, so a
+      # change to setup.sh that breaks a fresh install is caught. --no-build stops before
+      # the image build; the smoke test builds the images itself.
+      - name: Bootstrap (setup.sh --no-build)
+        run: ./setup.sh --no-build
+
+      # Fail fast if docker-compose.yml is malformed or an interpolation is missing.
+      - name: Validate compose file
+        run: docker compose --profile sdk-manager config -q
+
+      # Builds both images from scratch, checks the GTK binaries' shared libraries, the
+      # extension unpack, the Theia backend boot + HTTP, the gzip-served frontend bytes,
+      # and that the SDK Manager GUI launches under Xvfb. The simulator ldd check
+      # self-skips (no SDK here); the browser debug-path check is local-only by design.
       - name: Run smoke test
         run: ./test/smoke-test.sh
 
@@ -39,3 +42,23 @@ jobs:
           name: smoke-test-build-log
           path: /tmp/smoke-test-build.log
           if-no-files-found: ignore
+
+  # Validates the README's multi-arch claim: the Theia editing/build image builds for
+  # arm64 (the base is multi-arch and the compiler is a JVM app; only the apt layer is
+  # arch-specific). Emulated via QEMU, so it is slow - build only, nothing is run or
+  # pushed. The sdk-manager and simulator are x86_64-only (goals.md) and deliberately
+  # not built here.
+  arm64-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build theia image for linux/arm64 (no run, no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./theia
+          platforms: linux/arm64
+          push: false
+          outputs: type=cacheonly

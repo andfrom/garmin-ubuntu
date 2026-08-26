@@ -3,6 +3,18 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
+# --no-build: generate .env and create the data dirs, but skip the X grant and the image
+# build. Used by CI to exercise this script's real .env logic without a redundant build
+# (the smoke test builds the images itself). Everything up to the build is identical to a
+# normal run.
+NO_BUILD=0
+for arg in "$@"; do
+  case "$arg" in
+    --no-build) NO_BUILD=1 ;;
+    *) echo "unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
 echo "==> Checking prerequisites"
 command -v docker >/dev/null 2>&1 || { echo "docker not found - install Docker Engine first"; exit 1; }
 docker compose version >/dev/null 2>&1 || { echo "docker compose plugin not found"; exit 1; }
@@ -22,6 +34,11 @@ fi
 # shellcheck disable=SC1091
 source .env
 mkdir -p "$CONNECTIQ_DATA_DIR" "$WORKSPACES_DIR" "$THEIA_CONFIG_DIR"
+
+if [ "$NO_BUILD" = 1 ]; then
+  echo "==> .env and data directories ready (--no-build: skipping X grant and image build)"
+  exit 0
+fi
 
 if command -v xhost >/dev/null 2>&1; then
   echo "==> Granting local containers access to the X server"

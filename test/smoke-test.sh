@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
-# Headless smoke test: catches the two failure classes that actually broke this project
-# before (missing shared libraries in the GTK binaries, and broken image builds), without
-# needing a GUI or a real browser. Runs against ephemeral containers/ports/dirs, so it's
-# safe to run alongside an already-running `docker compose up -d theia`.
+# Headless smoke test: catches the failure classes that actually broke this project
+# before (missing shared libraries in the GTK binaries, broken image builds, patched
+# frontend files masked by a stale .gz twin, and a GUI that won't start). Runs against
+# ephemeral containers/ports/dirs, so it's safe alongside a running `docker compose up
+# -d theia`. Needs only Docker (the SDK Manager GUI check adds Xvfb in a throwaway image),
+# so it runs in CI.
 #
-# What this does NOT check: that the Monkey C extension fully activates in a real
-# frontend session (confirmed manually by opening http://localhost:3000 and checking
-# `docker compose logs theia` for "Debug configuration provider has been registered:
-# monkeyc"). Headless-browser automation of that check (snap Firefox --headless) proved
-# unreliable in testing - it never triggered the frontend websocket connection - so this
-# script deliberately doesn't fake it. Do that check by hand after any Dockerfile change
-# that touches the extension or Theia version.
+# NOT checked here (needs a browser or an SDK, so it lives in the other test scripts):
+# that the Monkey C extension activates in a real frontend session (test/task-events.sh)
+# and that "Run App" reaches the simulator end-to-end (test/debug-path.sh). See
+# test/README.md.
 set -uo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 
 PASS=0
 FAIL=0
@@ -64,6 +63,7 @@ if [ -f .env ]; then
   # shellcheck disable=SC1091
   CONNECTIQ_DATA_DIR=$(grep -E '^CONNECTIQ_DATA_DIR=' .env | cut -d= -f2-)
 fi
+# shellcheck disable=SC2012  # controlled glob under the SDK dir; ls is fine and simpler than find here
 SIM_BIN=$(ls "${CONNECTIQ_DATA_DIR:-/nonexistent}"/Sdks/*/bin/simulator 2>/dev/null | head -1 || true)
 if [ -n "$SIM_BIN" ]; then
   check_ldd "theia image / SDK simulator binary" garmin-theia:latest "/sdk-check/$(basename "$SIM_BIN")" \
@@ -122,6 +122,42 @@ if [ "${GZ:-0}" -ge 2 ] && [ "$GZ" = "$PLAIN" ]; then
   pass "patched hosted-plugin.js served identically via gzip (${GZ} markers)"
 else
   fail "gzip-served hosted-plugin.js differs from plain (plain=${PLAIN} gzip=${GZ}) - stale .gz twin?"
+fi
+
+echo "==> Checking the SDK Manager GUI actually launches (headless, under Xvfb)"
+# A GTK/WebKit app that is missing a library or can't reach a display dies immediately.
+# So: start Xvfb, launch sdkmanager, and assert it is still alive and has opened an X
+# window after a few seconds. Uses a throwaway image = the real sdk-manager image + Xvfb,
+# so the production image stays free of test-only packages. Needs no host X server, so it
+# runs in CI.
+GUI_IMG=garmin-sdk-manager-guitest
+if docker build -q -t "$GUI_IMG" - >/dev/null 2>&1 <<'DOCKERFILE'
+FROM garmin-sdk-manager:latest
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends xvfb x11-utils && rm -rf /var/lib/apt/lists/*
+USER garmin
+DOCKERFILE
+then
+  GUI_OUT=$(docker run --rm --entrypoint bash "$GUI_IMG" -c '
+    export DISPLAY=:99
+    Xvfb :99 -screen 0 1280x1024x24 >/dev/null 2>&1 &
+    sleep 2
+    /opt/sdk-manager/bin/sdkmanager >/tmp/sdkm.log 2>&1 &
+    SDKM=$!
+    sleep 12
+    if kill -0 "$SDKM" 2>/dev/null && xwininfo -root -tree 2>/dev/null | grep -qi ""sdkmanager""; then
+      echo GUI_OK
+    else
+      echo GUI_FAIL; tail -5 /tmp/sdkm.log
+    fi' 2>/dev/null)
+  if printf '%s' "$GUI_OUT" | grep -q GUI_OK; then
+    pass "sdk-manager GUI launches and opens a window (GTK/WebKit init OK)"
+  else
+    fail "sdk-manager GUI did not launch (crashed or no window) - $(printf '%s' "$GUI_OUT" | tail -3 | tr '\n' ' ')"
+  fi
+  docker rmi -f "$GUI_IMG" >/dev/null 2>&1 || true
+else
+  fail "could not build the sdk-manager GUI test image"
 fi
 
 echo
