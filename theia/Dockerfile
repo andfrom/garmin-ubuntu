@@ -95,8 +95,9 @@ RUN EXT=/opt/theia-plugins/monkey-c/extension/dist/extension.js \
 # Applied by a helper script since it patches multi-line source in the Theia-IDE base
 # image itself (not the extension), which is awkward to express as a single-line sed.
 COPY patch-debug-task-tracking.js /tmp/patch-debug-task-tracking.js
-RUN node /tmp/patch-debug-task-tracking.js \
-    /home/theia/applications/browser/lib/frontend/vendors-node_modules_theia_plugin-ext_lib_hosted_browser_hosted-plugin_js.js \
+RUN HP=/home/theia/applications/browser/lib/frontend/vendors-node_modules_theia_plugin-ext_lib_hosted_browser_hosted-plugin_js.js \
+    && node /tmp/patch-debug-task-tracking.js "$HP" \
+    && test "$(grep -c '_nativeProcessEnded' "$HP")" -ge 2 \
     && rm /tmp/patch-debug-task-tracking.js
 
 # The base image ships every frontend (browser-served) file with a pre-built .gz

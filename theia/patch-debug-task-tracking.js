@@ -26,11 +26,28 @@ if (!hostedPluginPath) throw new Error("usage: patch-debug-task-tracking.js <hos
 // constraint is documented in eclipse-theia/theia PR #8141).
 {
   let src = fs.readFileSync(hostedPluginPath, "utf8");
-  const needle = "this.taskWatcher.onTaskExit((event) => {\n            this.proxy.$onDidEndTask(event.taskId);\n        }));";
-  const count = src.split(needle).length - 1;
-  if (count !== 1) throw new Error(`patch needle found ${count} times in hosted-plugin.js, expected 1`);
-  src = src.split(needle).join(
-    "this.taskWatcher.onTaskExit((event) => {\n            if (event.code !== undefined) {\n                this.proxy.$onDidEndTaskProcess(event.code, event.taskId);\n            }\n            this.proxy.$onDidEndTask(event.taskId);\n        }));"
+
+  // Part A: remember every task for which Theia itself already sent
+  // $onDidEndTaskProcess (ProcessTask - shell/process executions). The task server
+  // broadcasts onDidEndTaskProcess *before* onTaskExit for those, over the same ordered
+  // channel, so by the time onTaskExit arrives we know whether to synthesize or not.
+  // Without this, process tasks get the event twice (verified with a repro extension:
+  // a ShellExecution task fired onDidEndTaskProcess twice under an earlier version of
+  // this patch).
+  const nativeNeedle = "this.toDispose.push(this.taskWatcher.onDidEndTaskProcess((event) => {\n            if (event.code !== undefined) {\n                this.proxy.$onDidEndTaskProcess(event.code, event.taskId);\n            }\n        }));";
+  const nativeCount = src.split(nativeNeedle).length - 1;
+  if (nativeCount !== 1) throw new Error(`native onDidEndTaskProcess needle found ${nativeCount} times in hosted-plugin.js, expected 1`);
+  src = src.split(nativeNeedle).join(
+    "this.toDispose.push(this.taskWatcher.onDidEndTaskProcess((event) => {\n            if (event.code !== undefined) {\n                (this._nativeProcessEnded || (this._nativeProcessEnded = new Set())).add(event.taskId);\n                this.proxy.$onDidEndTaskProcess(event.code, event.taskId);\n            }\n        }));"
+  );
+
+  // Part B: synthesize $onDidEndTaskProcess from onTaskExit for every task Theia did
+  // NOT already cover (i.e. CustomTask), before $onDidEndTask.
+  const exitNeedle = "this.taskWatcher.onTaskExit((event) => {\n            this.proxy.$onDidEndTask(event.taskId);\n        }));";
+  const exitCount = src.split(exitNeedle).length - 1;
+  if (exitCount !== 1) throw new Error(`onTaskExit needle found ${exitCount} times in hosted-plugin.js, expected 1`);
+  src = src.split(exitNeedle).join(
+    "this.taskWatcher.onTaskExit((event) => {\n            if (this._nativeProcessEnded && this._nativeProcessEnded.delete(event.taskId)) {\n                // Theia already sent $onDidEndTaskProcess for this (process) task\n            } else if (event.code !== undefined) {\n                this.proxy.$onDidEndTaskProcess(event.code, event.taskId);\n            }\n            this.proxy.$onDidEndTask(event.taskId);\n        }));"
   );
   fs.writeFileSync(hostedPluginPath, src);
   console.log("onDidEndTaskProcess patch applied to", hostedPluginPath);

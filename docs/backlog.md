@@ -60,6 +60,13 @@ commit when it is actually decided or done. Done items get deleted, not ticked.
 
 ## Hardening
 
+- **Promote the task-event repro harness into `test/`.** A 60-line VS Code extension
+  that runs a CustomExecution and a ShellExecution task on activation and logs which
+  `tasks.*` events fire, plus a Debian+Xvfb VS Code Desktop image and a Theia runner,
+  proved (2026-08-26) that VS Code 1.134.0 fires `onDidStartTaskProcess`/
+  `onDidEndTaskProcess` for CustomExecution while Theia 1.60.100 does not — and caught a
+  duplicate-event bug in this repo's own patch. Currently in gitignored scratch; it is
+  the right regression test for the Theia patch and belongs in the repo.
 - **Smoke test coverage for the debug path.** `test/smoke-test.sh` verifies libraries and
   HTTP; it does not yet exercise "Run App" end-to-end. Proven feasible on 2026-08-25: a
   puppeteer-core script against host Chromium (headless) opened the workspace, pressed
