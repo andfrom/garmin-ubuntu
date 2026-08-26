@@ -1,0 +1,10 @@
+{
+  "name": "repro-task-events",
+  "displayName": "repro: task process events for CustomExecution",
+  "publisher": "repro",
+  "version": "0.0.1",
+  "engines": { "vscode": "^1.61.0" },
+  "activationEvents": ["*"],
+  "main": "./extension.js",
+  "contributes": { "taskDefinitions": [ { "type": "repro" } ] }
+}

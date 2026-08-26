@@ -1,0 +1,7 @@
+{
+  "name": "garmin-ubuntu-tests",
+  "private": true,
+  "type": "module",
+  "description": "Headless browser drivers for the local (non-CI) checks in this directory.",
+  "dependencies": { "puppeteer-core": "^23.0.0" }
+}

@@ -1,2 +1,5 @@
 .env
 scratch/
+test/node_modules/
+test/package-lock.json
+test/out/
