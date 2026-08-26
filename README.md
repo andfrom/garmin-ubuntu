@@ -41,6 +41,29 @@ SDKs/devices without needing to run in the same container - trying to run both t
 the SDK Manager in one image is what broke earlier attempts (two GUI processes fighting over
 one container's foreground).
 
+## The Monkey C extension, and where it comes from
+
+The official Garmin Monkey C extension is fetched from the **Microsoft Visual Studio
+Marketplace** at image-build time (pinned by `MONKEYC_EXT_VERSION` in `theia/Dockerfile`),
+because that is currently the only place Garmin publishes it. Two things are worth knowing
+before you build:
+
+- **The Marketplace Terms of Use scope extensions to Microsoft's own products** (Visual
+  Studio, VS Code, GitHub Codespaces, Azure DevOps). Eclipse Theia is not on that list.
+  Building this image downloads the extension and runs it in Theia, which is your choice as
+  the person building it; this repository does not redistribute the extension or host it
+  anywhere - each build fetches it fresh from Garmin's Marketplace listing.
+- **The clean fix is Open VSX**, the vendor-neutral registry that Theia, VSCodium, Gitpod
+  and similar editors install from. The extension is not there yet; there is an open
+  request asking Garmin to publish it. If that happens, this image will install it from
+  Open VSX and the note above becomes moot.
+
+Building the image also means accepting Garmin's Connect IQ SDK License Agreement (bundled
+with the extension), which permits installing one copy on a machine you control for your own
+development - see [License](#license). If you would rather not fetch from the Marketplace at
+all, you can edit `theia/Dockerfile` to `COPY` a `.vsix` you already have instead of
+fetching one.
+
 ## Why this actually works
 
 Both `sdkmanager` and the SDK's `simulator` binary are native GTK/WebKit2GTK apps linked
