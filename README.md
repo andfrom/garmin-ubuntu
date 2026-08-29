@@ -1,4 +1,4 @@
-![Project Logo](assets/logo.png)
+![Project Logo](assets/images/logo.png)
 
 # garmin-ubuntu
 
