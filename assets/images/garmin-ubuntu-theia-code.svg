@@ -37,6 +37,10 @@
      inkscape:current-layer="layer1" />
   <defs
      id="defs1" />
+  <style>
+    .seg-on{fill:#000000}.seg-off{fill:#efefef}
+    @media (prefers-color-scheme: dark){.seg-on{fill:#ffffff}.seg-off{fill:#1e1e1e}}
+  </style>
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
@@ -75,7 +79,7 @@
        stroke-width="1"
        id="polygon1"
        transform="matrix(0.06511284,0,0,0.06511284,26.176966,29.868754)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="150,42.1 161,53.1 161,136.9 150,147.9 139,136.9 139,53.1 "
        fill="#ff2b2b"
@@ -83,7 +87,7 @@
        stroke-width="1"
        id="polygon2"
        transform="matrix(0.06511284,0,0,0.06511284,26.176966,29.868754)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="150,172.1 161,183.1 161,266.9 150,277.9 139,266.9 139,183.1 "
        fill="#ff2b2b"
@@ -91,7 +95,7 @@
        stroke-width="1"
        id="polygon3"
        transform="matrix(0.06511284,0,0,0.06511284,26.176966,29.868754)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="124.7,279 137.9,290 124.7,301 55.3,301 42.1,290 55.3,279 "
        fill="#ff2b2b"
@@ -99,7 +103,7 @@
        stroke-width="1"
        id="polygon4"
        transform="matrix(0.06511284,0,0,0.06511284,26.176966,29.868754)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="30,172.1 41,183.1 41,266.9 30,277.9 19,266.9 19,183.1 "
        fill="#ff2b2b"
@@ -107,7 +111,7 @@
        stroke-width="1"
        id="polygon5"
        transform="matrix(0.06511284,0,0,0.06511284,26.176966,29.868754)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="30,42.1 41,53.1 41,136.9 30,147.9 19,136.9 19,53.1 "
        fill="#ff2b2b"
@@ -115,7 +119,7 @@
        stroke-width="1"
        id="polygon6"
        transform="matrix(0.06511284,0,0,0.06511284,26.176966,29.868754)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="124.7,149 137.9,160 124.7,171 55.3,171 42.1,160 55.3,149 "
        fill="#ff2b2b"
@@ -123,7 +127,7 @@
        stroke-width="1"
        id="polygon7"
        transform="matrix(0.06511284,0,0,0.06511284,26.176966,29.868754)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="42.1,30 55.3,19 124.7,19 137.9,30 124.7,41 55.3,41 "
        fill="#ff2b2b"
@@ -131,7 +135,7 @@
        stroke-width="1"
        id="polygon1-9"
        transform="matrix(0.06511284,0,0,0.06511284,38.504994,29.868749)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="139,136.9 139,53.1 150,42.1 161,53.1 161,136.9 150,147.9 "
        fill="#ff2b2b"
@@ -139,7 +143,7 @@
        stroke-width="1"
        id="polygon2-2"
        transform="matrix(0.06511284,0,0,0.06511284,38.504994,29.868749)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="139,266.9 139,183.1 150,172.1 161,183.1 161,266.9 150,277.9 "
        fill="#ff2b2b"
@@ -147,7 +151,7 @@
        stroke-width="1"
        id="polygon3-0"
        transform="matrix(0.06511284,0,0,0.06511284,38.504994,29.868749)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="42.1,290 55.3,279 124.7,279 137.9,290 124.7,301 55.3,301 "
        fill="#ff2b2b"
@@ -155,7 +159,7 @@
        stroke-width="1"
        id="polygon4-2"
        transform="matrix(0.06511284,0,0,0.06511284,38.504994,29.868749)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="19,266.9 19,183.1 30,172.1 41,183.1 41,266.9 30,277.9 "
        fill="#ff2b2b"
@@ -163,7 +167,7 @@
        stroke-width="1"
        id="polygon5-3"
        transform="matrix(0.06511284,0,0,0.06511284,38.504994,29.868749)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="19,136.9 19,53.1 30,42.1 41,53.1 41,136.9 30,147.9 "
        fill="#ff2b2b"
@@ -171,7 +175,7 @@
        stroke-width="1"
        id="polygon6-7"
        transform="matrix(0.06511284,0,0,0.06511284,38.504994,29.868749)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="42.1,160 55.3,149 124.7,149 137.9,160 124.7,171 55.3,171 "
        fill="#ff2b2b"
@@ -179,7 +183,7 @@
        stroke-width="1"
        id="polygon7-5"
        transform="matrix(0.06511284,0,0,0.06511284,38.504994,29.868749)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="124.7,41 55.3,41 42.1,30 55.3,19 124.7,19 137.9,30 "
        fill="#ff2b2b"
@@ -187,7 +191,7 @@
        stroke-width="1"
        id="polygon1-97"
        transform="matrix(0.06511284,0,0,0.06511284,50.833025,29.868754)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="161,136.9 150,147.9 139,136.9 139,53.1 150,42.1 161,53.1 "
        fill="#ff2b2b"
@@ -195,7 +199,7 @@
        stroke-width="1"
        id="polygon2-3"
        transform="matrix(0.06511284,0,0,0.06511284,50.833025,29.868754)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="161,266.9 150,277.9 139,266.9 139,183.1 150,172.1 161,183.1 "
        fill="#ff2b2b"
@@ -203,7 +207,7 @@
        stroke-width="1"
        id="polygon3-6"
        transform="matrix(0.06511284,0,0,0.06511284,50.833025,29.868754)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="124.7,301 55.3,301 42.1,290 55.3,279 124.7,279 137.9,290 "
        fill="#ff2b2b"
@@ -211,7 +215,7 @@
        stroke-width="1"
        id="polygon4-1"
        transform="matrix(0.06511284,0,0,0.06511284,50.833025,29.868754)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="41,266.9 30,277.9 19,266.9 19,183.1 30,172.1 41,183.1 "
        fill="#ff2b2b"
@@ -219,7 +223,7 @@
        stroke-width="1"
        id="polygon5-2"
        transform="matrix(0.06511284,0,0,0.06511284,50.833025,29.868754)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="41,136.9 30,147.9 19,136.9 19,53.1 30,42.1 41,53.1 "
        fill="#ff2b2b"
@@ -227,7 +231,7 @@
        stroke-width="1"
        id="polygon6-9"
        transform="matrix(0.06511284,0,0,0.06511284,50.833025,29.868754)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="124.7,171 55.3,171 42.1,160 55.3,149 124.7,149 137.9,160 "
        fill="#ff2b2b"
@@ -235,7 +239,7 @@
        stroke-width="1"
        id="polygon7-3"
        transform="matrix(0.06511284,0,0,0.06511284,50.833025,29.868754)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="124.7,19 137.9,30 124.7,41 55.3,41 42.1,30 55.3,19 "
        fill="#ff2b2b"
@@ -243,7 +247,7 @@
        stroke-width="1"
        id="polygon1-9-1"
        transform="matrix(0.06511284,0,0,0.06511284,63.161051,29.868749)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="150,42.1 161,53.1 161,136.9 150,147.9 139,136.9 139,53.1 "
        fill="#ff2b2b"
@@ -251,7 +255,7 @@
        stroke-width="1"
        id="polygon2-2-9"
        transform="matrix(0.06511284,0,0,0.06511284,63.161051,29.868749)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="150,172.1 161,183.1 161,266.9 150,277.9 139,266.9 139,183.1 "
        fill="#ff2b2b"
@@ -259,7 +263,7 @@
        stroke-width="1"
        id="polygon3-0-4"
        transform="matrix(0.06511284,0,0,0.06511284,63.161051,29.868749)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="124.7,279 137.9,290 124.7,301 55.3,301 42.1,290 55.3,279 "
        fill="#ff2b2b"
@@ -267,7 +271,7 @@
        stroke-width="1"
        id="polygon4-2-7"
        transform="matrix(0.06511284,0,0,0.06511284,63.161051,29.868749)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="30,172.1 41,183.1 41,266.9 30,277.9 19,266.9 19,183.1 "
        fill="#ff2b2b"
@@ -275,7 +279,7 @@
        stroke-width="1"
        id="polygon5-3-8"
        transform="matrix(0.06511284,0,0,0.06511284,63.161051,29.868749)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="30,42.1 41,53.1 41,136.9 30,147.9 19,136.9 19,53.1 "
        fill="#ff2b2b"
@@ -283,7 +287,7 @@
        stroke-width="1"
        id="polygon6-7-4"
        transform="matrix(0.06511284,0,0,0.06511284,63.161051,29.868749)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="124.7,149 137.9,160 124.7,171 55.3,171 42.1,160 55.3,149 "
        fill="#ff2b2b"
@@ -291,7 +295,7 @@
        stroke-width="1"
        id="polygon7-5-5"
        transform="matrix(0.06511284,0,0,0.06511284,63.161051,29.868749)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="55.3,19 124.7,19 137.9,30 124.7,41 55.3,41 42.1,30 "
        fill="#ff2b2b"
@@ -299,7 +303,7 @@
        stroke-width="1"
        id="polygon1-0"
        transform="matrix(0.06511285,0,0,0.06511284,26.176966,52.470143)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="139,53.1 150,42.1 161,53.1 161,136.9 150,147.9 139,136.9 "
        fill="#ff2b2b"
@@ -307,7 +311,7 @@
        stroke-width="1"
        id="polygon2-6"
        transform="matrix(0.06511285,0,0,0.06511284,26.176966,52.470143)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="139,183.1 150,172.1 161,183.1 161,266.9 150,277.9 139,266.9 "
        fill="#ff2b2b"
@@ -315,7 +319,7 @@
        stroke-width="1"
        id="polygon3-3"
        transform="matrix(0.06511285,0,0,0.06511284,26.176966,52.470143)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="55.3,279 124.7,279 137.9,290 124.7,301 55.3,301 42.1,290 "
        fill="#ff2b2b"
@@ -323,7 +327,7 @@
        stroke-width="1"
        id="polygon4-20"
        transform="matrix(0.06511285,0,0,0.06511284,26.176966,52.470143)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="19,183.1 30,172.1 41,183.1 41,266.9 30,277.9 19,266.9 "
        fill="#ff2b2b"
@@ -331,7 +335,7 @@
        stroke-width="1"
        id="polygon5-6"
        transform="matrix(0.06511285,0,0,0.06511284,26.176966,52.470143)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="19,53.1 30,42.1 41,53.1 41,136.9 30,147.9 19,136.9 "
        fill="#ff2b2b"
@@ -339,7 +343,7 @@
        stroke-width="1"
        id="polygon6-1"
        transform="matrix(0.06511285,0,0,0.06511284,26.176966,52.470143)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="55.3,149 124.7,149 137.9,160 124.7,171 55.3,171 42.1,160 "
        fill="#ff2b2b"
@@ -347,7 +351,7 @@
        stroke-width="1"
        id="polygon7-55"
        transform="matrix(0.06511285,0,0,0.06511284,26.176966,52.470143)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="55.3,41 42.1,30 55.3,19 124.7,19 137.9,30 124.7,41 "
        fill="#ff2b2b"
@@ -355,7 +359,7 @@
        stroke-width="1"
        id="polygon1-9-4"
        transform="matrix(0.06511285,0,0,0.06511284,38.504991,52.470138)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="150,147.9 139,136.9 139,53.1 150,42.1 161,53.1 161,136.9 "
        fill="#ff2b2b"
@@ -363,7 +367,7 @@
        stroke-width="1"
        id="polygon2-2-7"
        transform="matrix(0.06511285,0,0,0.06511284,38.504991,52.470138)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="150,277.9 139,266.9 139,183.1 150,172.1 161,183.1 161,266.9 "
        fill="#ff2b2b"
@@ -371,7 +375,7 @@
        stroke-width="1"
        id="polygon3-0-6"
        transform="matrix(0.06511285,0,0,0.06511284,38.504991,52.470138)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="55.3,301 42.1,290 55.3,279 124.7,279 137.9,290 124.7,301 "
        fill="#ff2b2b"
@@ -379,7 +383,7 @@
        stroke-width="1"
        id="polygon4-2-5"
        transform="matrix(0.06511285,0,0,0.06511284,38.504991,52.470138)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="30,277.9 19,266.9 19,183.1 30,172.1 41,183.1 41,266.9 "
        fill="#ff2b2b"
@@ -387,7 +391,7 @@
        stroke-width="1"
        id="polygon5-3-6"
        transform="matrix(0.06511285,0,0,0.06511284,38.504991,52.470138)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="30,147.9 19,136.9 19,53.1 30,42.1 41,53.1 41,136.9 "
        fill="#ff2b2b"
@@ -395,7 +399,7 @@
        stroke-width="1"
        id="polygon6-7-9"
        transform="matrix(0.06511285,0,0,0.06511284,38.504991,52.470138)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="55.3,171 42.1,160 55.3,149 124.7,149 137.9,160 124.7,171 "
        fill="#ff2b2b"
@@ -403,7 +407,7 @@
        stroke-width="1"
        id="polygon7-5-3"
        transform="matrix(0.06511285,0,0,0.06511284,38.504991,52.470138)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="137.9,30 124.7,41 55.3,41 42.1,30 55.3,19 124.7,19 "
        fill="#ff2b2b"
@@ -411,7 +415,7 @@
        stroke-width="1"
        id="polygon1-97-7"
        transform="matrix(0.06511285,0,0,0.06511284,50.833026,52.470143)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="161,53.1 161,136.9 150,147.9 139,136.9 139,53.1 150,42.1 "
        fill="#ff2b2b"
@@ -419,7 +423,7 @@
        stroke-width="1"
        id="polygon2-3-4"
        transform="matrix(0.06511285,0,0,0.06511284,50.833026,52.470143)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="161,183.1 161,266.9 150,277.9 139,266.9 139,183.1 150,172.1 "
        fill="#ff2b2b"
@@ -427,7 +431,7 @@
        stroke-width="1"
        id="polygon3-6-5"
        transform="matrix(0.06511285,0,0,0.06511284,50.833026,52.470143)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="137.9,290 124.7,301 55.3,301 42.1,290 55.3,279 124.7,279 "
        fill="#ff2b2b"
@@ -435,7 +439,7 @@
        stroke-width="1"
        id="polygon4-1-2"
        transform="matrix(0.06511285,0,0,0.06511284,50.833026,52.470143)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="41,183.1 41,266.9 30,277.9 19,266.9 19,183.1 30,172.1 "
        fill="#ff2b2b"
@@ -443,7 +447,7 @@
        stroke-width="1"
        id="polygon5-2-5"
        transform="matrix(0.06511285,0,0,0.06511284,50.833026,52.470143)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="41,53.1 41,136.9 30,147.9 19,136.9 19,53.1 30,42.1 "
        fill="#ff2b2b"
@@ -451,7 +455,7 @@
        stroke-width="1"
        id="polygon6-9-4"
        transform="matrix(0.06511285,0,0,0.06511284,50.833026,52.470143)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="137.9,160 124.7,171 55.3,171 42.1,160 55.3,149 124.7,149 "
        fill="#ff2b2b"
@@ -459,7 +463,7 @@
        stroke-width="1"
        id="polygon7-3-7"
        transform="matrix(0.06511285,0,0,0.06511284,50.833026,52.470143)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="55.3,19 124.7,19 137.9,30 124.7,41 55.3,41 42.1,30 "
        fill="#ff2b2b"
@@ -467,7 +471,7 @@
        stroke-width="1"
        id="polygon1-9-1-4"
        transform="matrix(0.06511285,0,0,0.06511284,63.161055,52.470138)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="139,53.1 150,42.1 161,53.1 161,136.9 150,147.9 139,136.9 "
        fill="#ff2b2b"
@@ -475,7 +479,7 @@
        stroke-width="1"
        id="polygon2-2-9-4"
        transform="matrix(0.06511285,0,0,0.06511284,63.161055,52.470138)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="139,183.1 150,172.1 161,183.1 161,266.9 150,277.9 139,266.9 "
        fill="#ff2b2b"
@@ -483,7 +487,7 @@
        stroke-width="1"
        id="polygon3-0-4-3"
        transform="matrix(0.06511285,0,0,0.06511284,63.161055,52.470138)"
-       style="fill:#efefef;fill-opacity:1;stroke:none" />
+       class="seg-off" style="fill-opacity:1;stroke:none" />
     <polygon
        points="55.3,279 124.7,279 137.9,290 124.7,301 55.3,301 42.1,290 "
        fill="#ff2b2b"
@@ -491,7 +495,7 @@
        stroke-width="1"
        id="polygon4-2-7-0"
        transform="matrix(0.06511285,0,0,0.06511284,63.161055,52.470138)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="19,183.1 30,172.1 41,183.1 41,266.9 30,277.9 19,266.9 "
        fill="#ff2b2b"
@@ -499,7 +503,7 @@
        stroke-width="1"
        id="polygon5-3-8-7"
        transform="matrix(0.06511285,0,0,0.06511284,63.161055,52.470138)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="19,53.1 30,42.1 41,53.1 41,136.9 30,147.9 19,136.9 "
        fill="#ff2b2b"
@@ -507,7 +511,7 @@
        stroke-width="1"
        id="polygon6-7-4-8"
        transform="matrix(0.06511285,0,0,0.06511284,63.161055,52.470138)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
     <polygon
        points="55.3,149 124.7,149 137.9,160 124.7,171 55.3,171 42.1,160 "
        fill="#ff2b2b"
@@ -515,6 +519,6 @@
        stroke-width="1"
        id="polygon7-5-5-6"
        transform="matrix(0.06511285,0,0,0.06511284,63.161055,52.470138)"
-       style="fill:#000000;fill-opacity:1;stroke:none" />
+       class="seg-on" style="fill-opacity:1;stroke:none" />
   </g>
 </svg>

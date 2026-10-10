@@ -1,4 +1,4 @@
-![Project Logo](assets/images/logo.png)
+![garmin-ubuntu logo: a circle of friends in Ubuntu orange and blue around the words BETA CODE on a seven-segment display](assets/images/garmin-ubuntu-theia-code.svg)
 
 # garmin-ubuntu
 
