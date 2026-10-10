@@ -14,7 +14,13 @@ FROM debian:11-slim
 ARG UID=1000
 ARG GID=1000
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Debian 11 reached end of life on 2026-08-31 and its security pool has since been
+# removed from deb.debian.org (the index is still served, so `apt-get update` succeeds and
+# every download then 404s). archive.debian.org carries the final, frozen bullseye suites
+# with byte-identical package indexes, so this repoint changes which mirror answers, not
+# which versions are installed.
+RUN sed -i 's|http://deb.debian.org/|http://archive.debian.org/|g' /etc/apt/sources.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
     libwebkit2gtk-4.0-37 \
     libsoup2.4-1 \
     libgtk-3-0 \

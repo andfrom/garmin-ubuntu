@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  # Weekly, so rot outside the repo (a Debian suite leaving the mirrors, a base-image
+  # pull failing) surfaces within days instead of on the next unrelated push. The
+  # 2026-10 break was exactly that: five weeks of silence after Debian 11's end of life.
+  schedule:
+    - cron: "23 5 * * 1"
 
 jobs:
   smoke-test:

@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Image builds failed with apt 404s: Debian 11 reached end of life on 2026-08-31 and its
+  security packages left deb.debian.org. Both Dockerfiles now fetch from
+  archive.debian.org, whose bullseye indexes are byte-identical, so the installed
+  versions are unchanged.
+
+### Changed
+
+- The smoke-test workflow also runs weekly, so breakage outside the repo surfaces
+  within days rather than on the next push.
+
 ## [0.1.0] - 2026-08-26
 
 First public release.
